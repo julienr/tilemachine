@@ -41,6 +41,10 @@ async fn get_tile(
     }
 }
 
+async fn handler_404() -> impl IntoResponse {
+    (StatusCode::NOT_FOUND, "not found")
+}
+
 // https://docs.rs/tokio/0.2.20/tokio/index.html#cpu-bound-tasks-and-blocking-code
 
 #[tokio::main]
@@ -55,6 +59,7 @@ async fn main() {
     println!("Opened raster of size={:?}", ds.raster_size());
 
     let app = Router::new()
+        .fallback(handler_404)
         .route("/", get(|| async { "Hello, World2!" }))
         .route("/tile/:raster_path/:z/:y/:x", get(get_tile));
 
