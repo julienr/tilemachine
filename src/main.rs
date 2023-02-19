@@ -50,14 +50,6 @@ async fn handler_404() -> impl IntoResponse {
 #[tokio::main]
 async fn main() {
     setup_gdal();
-    let r = Dataset::open("/vsis3/rasters/raster1.tif");
-    if r.is_err() {
-        println!("Error {:?}", r.err());
-        panic!();
-    }
-    let ds = r.unwrap();
-    println!("Opened raster of size={:?}", ds.raster_size());
-
     let app = Router::new()
         .fallback(handler_404)
         .route("/", get(|| async { "Hello, World2!" }))
