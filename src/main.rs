@@ -3,6 +3,8 @@ use std::env;
 use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Router};
 use gdal::Dataset;
 
+mod xyz;
+
 fn setup_gdal() {
     env::set_var("VSI_CACHE", "TRUE");
     env::set_var("GDAL_DISABLE_READDIR_ON_OPEN", "TRUE");
@@ -17,7 +19,7 @@ fn setup_gdal() {
 
 // raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
 async fn get_tile(
-    Path((raster_path, z, y, x)): Path<(String, u32, u32, u32)>,
+    Path((raster_path, z, y, x)): Path<(String, u64, u64, u64)>,
 ) -> impl IntoResponse {
     println!(
         "get_tile raster_path={:?}, z={:?}, y={:?}, x={:?}",
@@ -28,6 +30,7 @@ async fn get_tile(
     match Dataset::open(vsi_path.as_str()) {
         Ok(ds) => {
             println!("Opened raster of size={:?}", ds.raster_size());
+            xyz::extract_tile(&ds, x, y, z);
             (StatusCode::OK, "ok").into_response()
         }
         Err(err) => {
