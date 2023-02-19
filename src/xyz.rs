@@ -86,6 +86,7 @@ pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) {
     tile_ds.set_spatial_ref(&tile_srs).unwrap();
 
     // TODO: Warp from ds into tile_ds, read as RGBA and encode as PNG
+    gdal::raster::reproject(ds, &tile_ds).unwrap();
     println!("ds={:?}, tile_ds={:?}", ds, tile_ds);
     println!("extracting_tile for x={:?}, y={:?}, zoom={:?}", x, y, zoom);
 }
