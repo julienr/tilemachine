@@ -1,6 +1,6 @@
 use std::env;
 
-use axum::{extract::Path, routing::get, Router};
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Router};
 use gdal::Dataset;
 
 fn setup_gdal() {
@@ -15,8 +15,30 @@ fn setup_gdal() {
     env::set_var("CPL_DEBUG", "1");
 }
 
-async fn get_tile(Path((z, y, x)): Path<(u32, u32, u32)>) {
-    println!("get_tile z={:?}, y={:?}, x={:?}", z, y, x);
+// raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
+async fn get_tile(
+    Path((raster_path, z, y, x)): Path<(String, u32, u32, u32)>,
+) -> impl IntoResponse {
+    println!(
+        "get_tile raster_path={:?}, z={:?}, y={:?}, x={:?}",
+        raster_path, z, y, x
+    );
+    let mut vsi_path = "/vsis3/".to_owned();
+    vsi_path.push_str(raster_path.as_str());
+    match Dataset::open(vsi_path.as_str()) {
+        Ok(ds) => {
+            println!("Opened raster of size={:?}", ds.raster_size());
+            (StatusCode::OK, "ok").into_response()
+        }
+        Err(err) => {
+            println!("Error opening {:?}: {:?}", raster_path, err);
+            (
+                StatusCode::NOT_FOUND,
+                format!("Error opening {:?}", raster_path),
+            )
+                .into_response()
+        }
+    }
 }
 
 // https://docs.rs/tokio/0.2.20/tokio/index.html#cpu-bound-tasks-and-blocking-code
@@ -34,7 +56,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, World2!" }))
-        .route("/tile/:z/:y/:x", get(get_tile));
+        .route("/tile/:raster_path/:z/:y/:x", get(get_tile));
 
     axum::Server::bind(&"0.0.0.0:8080".parse().unwrap())
         .serve(app.into_make_service())
