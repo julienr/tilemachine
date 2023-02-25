@@ -1,5 +1,8 @@
+use png;
 use std::f64::consts::PI;
+use std::io::BufWriter;
 
+use gdal::raster::ResampleAlg;
 use gdal::{spatial_ref::SpatialRef, Dataset, DriverManager};
 
 // This is the WGS_1984 spheroid radius in meters
@@ -56,7 +59,7 @@ fn compute_tile_bounds(x: u64, y: u64, zoom: u64) -> TileBounds {
     }
 }
 
-pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) {
+pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) -> Vec<u8> {
     // TODO: Early return if tile out of raster
     // TODO: Early return if raster invisible in tile (covers too little)
     let tile_srs = SpatialRef::from_epsg(3857).unwrap();
@@ -89,4 +92,25 @@ pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) {
     gdal::raster::reproject(ds, &tile_ds).unwrap();
     println!("ds={:?}, tile_ds={:?}", ds, tile_ds);
     println!("extracting_tile for x={:?}, y={:?}, zoom={:?}", x, y, zoom);
+    let buf = tile_ds
+        .read_as::<u8>(
+            (0, 0),
+            (TILE_SIZE as usize, TILE_SIZE as usize),
+            (TILE_SIZE as usize, TILE_SIZE as usize),
+            Some(ResampleAlg::Bilinear),
+        )
+        .unwrap();
+    println!("buf len={:?}", buf.data.len());
+    {
+        let mut out_buf = Vec::new();
+        {
+            let w = BufWriter::new(&mut out_buf);
+            let mut encoder = png::Encoder::new(w, TILE_SIZE as u32, TILE_SIZE as u32);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Eight);
+            let mut writer = encoder.write_header().unwrap();
+            writer.write_image_data(&buf.data).unwrap();
+        }
+        return out_buf;
+    }
 }

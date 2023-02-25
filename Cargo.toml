@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 axum = "0.6.7"
-gdal = "0.14.0"
-# gdal = { path = "../gdal" }
+# gdal = "0.14.0"
+gdal = { path = "../gdal-rs" }
 tokio = { version = "1.25.0", features = ["macros", "rt-multi-thread"] }
+png = "0.17.7"

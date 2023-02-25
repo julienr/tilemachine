@@ -30,7 +30,8 @@ async fn get_tile(
     match Dataset::open(vsi_path.as_str()) {
         Ok(ds) => {
             println!("Opened raster of size={:?}", ds.raster_size());
-            xyz::extract_tile(&ds, x, y, z);
+            let pngdata = xyz::extract_tile(&ds, x, y, z);
+            println!("pngdata={:?}", pngdata);
             (StatusCode::OK, "ok").into_response()
         }
         Err(err) => {
@@ -53,6 +54,7 @@ async fn handler_404() -> impl IntoResponse {
 #[tokio::main]
 async fn main() {
     setup_gdal();
+    // TODO: Actix seems less magic than axum => use actix ?
     let app = Router::new()
         .fallback(handler_404)
         .route("/", get(|| async { "Hello, World2!" }))
