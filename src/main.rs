@@ -1,6 +1,9 @@
 use std::env;
 
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Router};
+use actix_files as fs;
+use actix_web::{
+    get, http::header::ContentType, middleware, web, App, HttpRequest, HttpResponse, HttpServer,
+};
 use gdal::Dataset;
 
 mod xyz;
@@ -18,50 +21,44 @@ fn setup_gdal() {
 }
 
 // raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
-async fn get_tile(
-    Path((raster_path, z, y, x)): Path<(String, u64, u64, u64)>,
-) -> impl IntoResponse {
-    println!(
-        "get_tile raster_path={:?}, z={:?}, y={:?}, x={:?}",
-        raster_path, z, y, x
-    );
+#[get("/{raster_path}/{z}/{y}/{x}")]
+async fn get_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
+    let (raster_path, z, y, x) = path.into_inner();
     let mut vsi_path = "/vsis3/".to_owned();
     vsi_path.push_str(raster_path.as_str());
     match Dataset::open(vsi_path.as_str()) {
         Ok(ds) => {
-            println!("Opened raster of size={:?}", ds.raster_size());
             let pngdata = xyz::extract_tile(&ds, x, y, z);
-            println!("pngdata={:?}", pngdata);
-            (StatusCode::OK, "ok").into_response()
+            HttpResponse::Ok()
+                .content_type(ContentType::png())
+                .body(pngdata)
         }
         Err(err) => {
-            println!("Error opening {:?}: {:?}", raster_path, err);
-            (
-                StatusCode::NOT_FOUND,
-                format!("Error opening {:?}", raster_path),
-            )
-                .into_response()
+            println!("Error opening {:?}, err={:?}", err, raster_path);
+            HttpResponse::NotFound().body(format!("Error opening {:?}", raster_path))
         }
     }
 }
 
-async fn handler_404() -> impl IntoResponse {
-    (StatusCode::NOT_FOUND, "not found")
+async fn default_route(req: HttpRequest) -> HttpResponse {
+    HttpResponse::NotFound().body(format!("Not found: {:?}", req.path()))
 }
 
 // https://docs.rs/tokio/0.2.20/tokio/index.html#cpu-bound-tasks-and-blocking-code
 
-#[tokio::main]
-async fn main() {
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    simple_logger::init_with_level(log::Level::Debug).unwrap();
     setup_gdal();
-    // TODO: Actix seems less magic than axum => use actix ?
-    let app = Router::new()
-        .fallback(handler_404)
-        .route("/", get(|| async { "Hello, World2!" }))
-        .route("/tile/:raster_path/:z/:y/:x", get(get_tile));
-
-    axum::Server::bind(&"0.0.0.0:8080".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    HttpServer::new(|| {
+        App::new()
+            .wrap(middleware::Compress::default())
+            .service(web::scope("/tile").service(get_tile))
+            .service(fs::Files::new("/", "./web").index_file("index.html"))
+            .default_service(web::route().to(default_route))
+            .wrap(middleware::Logger::default())
+    })
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
 }

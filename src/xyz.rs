@@ -1,4 +1,3 @@
-use png;
 use std::f64::consts::PI;
 use std::io::BufWriter;
 
@@ -111,6 +110,6 @@ pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) -> Vec<u8> {
             let mut writer = encoder.write_header().unwrap();
             writer.write_image_data(&buf.data).unwrap();
         }
-        return out_buf;
+        out_buf
     }
 }
