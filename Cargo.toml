@@ -10,4 +10,6 @@ simple_logger = "2.1.0"
 log = "0.4.14"
 # gdal = "0.14.0"
 gdal = { path = "../gdal-rs" }
+gdal-sys = "0.8.0"
 png = "0.17.7"
+serde = { version = "1.0.152", features = ["derive"] }

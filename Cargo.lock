@@ -501,7 +501,7 @@ version = "0.14.0"
 dependencies = [
  "bitflags",
  "chrono",
- "gdal-sys",
+ "gdal-sys 0.8.0",
  "geo-types",
  "libc",
  "once_cell",
@@ -512,6 +512,17 @@ dependencies = [
 [[package]]
 name = "gdal-sys"
 version = "0.8.0"
+dependencies = [
+ "libc",
+ "pkg-config",
+ "semver",
+]
+
+[[package]]
+name = "gdal-sys"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc578b8a84a9c950dfc110ef134f592181db19745b4ef46bf92039adf0af2dad"
 dependencies = [
  "libc",
  "pkg-config",
@@ -717,8 +728,10 @@ dependencies = [
  "actix-files",
  "actix-web",
  "gdal",
+ "gdal-sys 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "png",
+ "serde",
  "simple_logger",
 ]
 
@@ -986,6 +999,20 @@ name = "serde"
 version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.152"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af487d118eecd09402d70a5d72551860e788df87b464af30e5ea6a38c75c541e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "serde_json"

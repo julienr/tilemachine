@@ -1,1 +1,75 @@
-Welcome to mapmachine !
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>mapmachine</title>
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon"> 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+
+    <style>
+      html, body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        display: flex;
+        align-items: stretch;
+      }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+      #overlay {
+        position: absolute;
+        bottom: 0;
+        background-color: white;
+        padding: 30px;
+        z-index: 1000;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map">
+    </div>
+    <div id="overlay">
+      <p>Enter a raster blobname:</p>
+      <form id="raster_form" action="/" method="GET">
+        <input name="raster_path" type="text" />
+        <input type="submit" value="Display" />
+      </form>
+    </div>
+    <script>
+      async function getBounds (rasterPath) {
+        const resp = await fetch("/bounds/" + encodeURIComponent(rasterPath));
+        if (!resp.ok) {
+          const body = await resp.text()
+          throw new Error('Failed to get bounds :' + body);
+        }
+        return resp.json();
+      }
+
+      const params = new URLSearchParams(window.location.search);
+
+      const map = L.map('map').setView([0, 30], 9);
+      const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+
+      const rasterPath = params.get("raster_path");
+      const rasterForm = document.getElementById("raster_form")
+      if (rasterPath) {
+        rasterForm.raster_path.value = rasterPath
+        getBounds(rasterPath).then((bounds) => {
+          bounds = L.latLngBounds(bounds.coordinates[0].map((coord) => L.latLng(coord[1], coord[0])))
+          map.fitBounds(bounds)
+        })
+        L.tileLayer('/tile/xyz/' + encodeURIComponent(rasterPath) + '/{z}/{y}/{x}', {
+          // TODO: Obtain maxZoom from /bounds ?
+          maxZoom: 25
+        }).addTo(map);
+      }
+    </script>
+  </body>
+</html>

@@ -6,6 +6,9 @@ use actix_web::{
 };
 use gdal::Dataset;
 
+mod bbox;
+mod geojson;
+mod raster;
 mod xyz;
 
 fn setup_gdal() {
@@ -22,7 +25,7 @@ fn setup_gdal() {
 
 // raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
 #[get("/{raster_path}/{z}/{y}/{x}")]
-async fn get_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
+async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
     let (raster_path, z, y, x) = path.into_inner();
     let mut vsi_path = "/vsis3/".to_owned();
     vsi_path.push_str(raster_path.as_str());
@@ -32,6 +35,24 @@ async fn get_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
             HttpResponse::Ok()
                 .content_type(ContentType::png())
                 .body(pngdata)
+        }
+        Err(err) => {
+            println!("Error opening {:?}, err={:?}", err, raster_path);
+            HttpResponse::NotFound().body(format!("Error opening {:?}", raster_path))
+        }
+    }
+}
+
+#[get("/{raster_path}")]
+async fn get_bounds(path: web::Path<String>) -> HttpResponse {
+    let raster_path = path.into_inner();
+    let mut vsi_path = "/vsis3/".to_owned();
+    vsi_path.push_str(raster_path.as_str());
+    match Dataset::open(vsi_path.as_str()) {
+        Ok(ds) => {
+            // TODO: Remove unwrap
+            let bounds = raster::bounds(&ds).unwrap();
+            HttpResponse::Ok().json(bounds)
         }
         Err(err) => {
             println!("Error opening {:?}, err={:?}", err, raster_path);
@@ -53,7 +74,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap(middleware::Compress::default())
-            .service(web::scope("/tile").service(get_tile))
+            .service(web::scope("/tile/xyz").service(get_xyz_tile))
+            .service(web::scope("/bounds").service(get_bounds))
             .service(fs::Files::new("/", "./web").index_file("index.html"))
             .default_service(web::route().to(default_route))
             .wrap(middleware::Logger::default())
