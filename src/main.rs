@@ -24,7 +24,7 @@ fn setup_gdal() {
 }
 
 // raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
-#[get("/{raster_path}/{z}/{y}/{x}")]
+#[get("/tile/xyz/{raster_path}/{z}/{y}/{x}")]
 async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
     let (raster_path, z, y, x) = path.into_inner();
     let mut vsi_path = "/vsis3/".to_owned();
@@ -43,7 +43,7 @@ async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse 
     }
 }
 
-#[get("/{raster_path}")]
+#[get("/bounds/{raster_path}")]
 async fn get_bounds(path: web::Path<String>) -> HttpResponse {
     let raster_path = path.into_inner();
     let mut vsi_path = "/vsis3/".to_owned();
@@ -74,8 +74,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap(middleware::Compress::default())
-            .service(web::scope("/tile/xyz").service(get_xyz_tile))
-            .service(web::scope("/bounds").service(get_bounds))
+            .service(get_xyz_tile)
+            .service(get_bounds)
             .service(fs::Files::new("/", "./web").index_file("index.html"))
             .default_service(web::route().to(default_route))
             .wrap(middleware::Logger::default())
