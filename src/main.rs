@@ -27,15 +27,16 @@ fn setup_gdal() {
 #[get("/tile/xyz/{raster_path}/{z}/{y}/{x}")]
 async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
     let (raster_path, z, y, x) = path.into_inner();
+
+// Opens the given raster and response by applying f on it
+fn respond_with_raster<F>(raster_path: &String, f: F) -> HttpResponse
+where
+    F: Fn(&Dataset) -> HttpResponse,
+{
     let mut vsi_path = "/vsis3/".to_owned();
     vsi_path.push_str(raster_path.as_str());
     match Dataset::open(vsi_path.as_str()) {
-        Ok(ds) => {
-            let pngdata = xyz::extract_tile(&ds, x, y, z);
-            HttpResponse::Ok()
-                .content_type(ContentType::png())
-                .body(pngdata)
-        }
+        Ok(ds) => f(&ds),
         Err(err) => {
             println!("Error opening {:?}, err={:?}", err, raster_path);
             HttpResponse::NotFound().body(format!("Error opening {:?}", raster_path))
@@ -43,22 +44,26 @@ async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse 
     }
 }
 
+// raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
+#[get("/tile/xyz/{raster_path}/{z}/{y}/{x}")]
+async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
+    let (raster_path, z, y, x) = path.into_inner();
+    respond_with_raster(&raster_path, |ds| {
+        let pngdata = xyz::extract_tile(ds, x, y, z);
+        HttpResponse::Ok()
+            .content_type(ContentType::png())
+            .body(pngdata)
+    })
+}
+
 #[get("/bounds/{raster_path}")]
 async fn get_bounds(path: web::Path<String>) -> HttpResponse {
     let raster_path = path.into_inner();
-    let mut vsi_path = "/vsis3/".to_owned();
-    vsi_path.push_str(raster_path.as_str());
-    match Dataset::open(vsi_path.as_str()) {
-        Ok(ds) => {
-            // TODO: Remove unwrap
-            let bounds = raster::bounds(&ds).unwrap();
-            HttpResponse::Ok().json(bounds)
-        }
-        Err(err) => {
-            println!("Error opening {:?}, err={:?}", err, raster_path);
-            HttpResponse::NotFound().body(format!("Error opening {:?}", raster_path))
-        }
-    }
+    respond_with_raster(&raster_path, |ds| {
+        // TODO: Remove unwrap
+        let bounds = raster::bounds(ds).unwrap();
+        HttpResponse::Ok().json(bounds)
+    })
 }
 
 async fn default_route(req: HttpRequest) -> HttpResponse {
