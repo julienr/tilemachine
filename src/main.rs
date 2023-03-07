@@ -59,7 +59,7 @@ async fn get_wms(path: web::Path<String>) -> HttpResponse {
 }
 
 // raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
-#[get("/tile/xyz/{raster_path}/{z}/{y}/{x}")]
+#[get("/tile/xyz/{raster_path:.+}/{z}/{y}/{x}")]
 async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
     let (raster_path, z, y, x) = path.into_inner();
     respond_with_raster(&raster_path, |ds| {
@@ -70,7 +70,7 @@ async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse 
     })
 }
 
-#[get("/bounds/{raster_path}")]
+#[get("/bounds/{raster_path:.+}")]
 async fn get_bounds(path: web::Path<String>) -> HttpResponse {
     let raster_path = path.into_inner();
     respond_with_raster(&raster_path, |ds| {
