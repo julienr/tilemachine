@@ -1,4 +1,5 @@
 use std::env;
+use std::path::Path;
 
 use actix_files as fs;
 use actix_web::{
@@ -43,7 +44,10 @@ where
 #[get("/wms/{raster_path:.+}/service")]
 async fn get_wms(path: web::Path<String>) -> HttpResponse {
     let raster_path = path.into_inner();
-    respond_with_raster(&raster_path, |ds| match wms::capabilities(ds) {
+    let image_name = Path::new(&raster_path)
+        .file_name()
+        .map_or("image", |s| s.to_str().unwrap());
+    respond_with_raster(&raster_path, |ds| match wms::capabilities(image_name, ds) {
         Ok(xml) => HttpResponse::Ok()
             .content_type(ContentType::xml())
             .body(xml),

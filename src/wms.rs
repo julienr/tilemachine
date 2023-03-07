@@ -5,9 +5,9 @@ use handlebars::Handlebars;
 use serde_json::json;
 use std::error::Error;
 
-pub fn capabilities(ds: &Dataset) -> Result<String, Box<dyn Error>> {
+pub fn capabilities(image_name: &str, ds: &Dataset) -> Result<String, Box<dyn Error>> {
     let bbox = raster_projected_bbox(ds, 4326)?;
-    get_capabilities_xml("test", bbox)
+    get_capabilities_xml(image_name, bbox)
 }
 
 fn get_capabilities_xml(
