@@ -15,7 +15,7 @@ fn raster_local_bbox(ds: &Dataset) -> Result<BoundingBox, GdalError> {
     })
 }
 
-fn raster_projected_bbox(ds: &Dataset, epsg: u32) -> Result<BoundingBox, GdalError> {
+pub fn raster_projected_bbox(ds: &Dataset, epsg: u32) -> Result<BoundingBox, GdalError> {
     let local_bbox = raster_local_bbox(ds)?;
     let raster_srs = ds.spatial_ref()?;
     raster_srs.set_axis_mapping_strategy(OSRAxisMappingStrategy::OAMS_TRADITIONAL_GIS_ORDER);

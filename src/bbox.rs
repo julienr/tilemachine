@@ -8,7 +8,7 @@ pub struct BoundingBox {
 }
 
 impl BoundingBox {
-    pub fn transform(self, transform: &CoordTransform) -> Result<BoundingBox, GdalError> {
+    pub fn transform(&self, transform: &CoordTransform) -> Result<BoundingBox, GdalError> {
         let mut bounds = [self.xmin, self.ymin, self.xmax, self.ymax];
         bounds = transform.transform_bounds(&bounds, 21)?;
         Ok(BoundingBox {
@@ -17,5 +17,9 @@ impl BoundingBox {
             xmax: bounds[2],
             ymax: bounds[3],
         })
+    }
+
+    pub fn to_array(&self) -> [f64; 4] {
+        [self.xmin, self.ymin, self.xmax, self.ymax]
     }
 }

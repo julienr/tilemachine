@@ -9,6 +9,7 @@ use gdal::Dataset;
 mod bbox;
 mod geojson;
 mod raster;
+mod wms;
 mod xyz;
 
 fn setup_gdal() {
@@ -22,11 +23,6 @@ fn setup_gdal() {
     // TODO: Enable for verbose debugging
     env::set_var("CPL_DEBUG", "1");
 }
-
-// raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
-#[get("/tile/xyz/{raster_path}/{z}/{y}/{x}")]
-async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
-    let (raster_path, z, y, x) = path.into_inner();
 
 // Opens the given raster and response by applying f on it
 fn respond_with_raster<F>(raster_path: &String, f: F) -> HttpResponse
@@ -42,6 +38,20 @@ where
             HttpResponse::NotFound().body(format!("Error opening {:?}", raster_path))
         }
     }
+}
+
+#[get("/wms/{raster_path:.+}/service")]
+async fn get_wms(path: web::Path<String>) -> HttpResponse {
+    let raster_path = path.into_inner();
+    respond_with_raster(&raster_path, |ds| match wms::capabilities(ds) {
+        Ok(xml) => HttpResponse::Ok()
+            .content_type(ContentType::xml())
+            .body(xml),
+        Err(e) => {
+            println!("Failed to generate capabilities: {:?}", e);
+            HttpResponse::InternalServerError().body("Failed to generate capabilities")
+        }
+    })
 }
 
 // raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
@@ -79,6 +89,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap(middleware::Compress::default())
+            .service(get_wms)
             .service(get_xyz_tile)
             .service(get_bounds)
             .service(fs::Files::new("/", "./web").index_file("index.html"))
