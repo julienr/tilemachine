@@ -6,6 +6,7 @@ use actix_web::{
     get, http::header::ContentType, middleware, web, App, HttpRequest, HttpResponse, HttpServer,
 };
 use gdal::Dataset;
+use std::collections::HashMap;
 
 mod bbox;
 mod geojson;
@@ -42,11 +43,16 @@ where
 }
 
 #[get("/wms/{raster_path:.+}/service")]
-async fn get_wms(path: web::Path<String>) -> HttpResponse {
+async fn get_wms(
+    path: web::Path<String>,
+    query: web::Query<HashMap<String, String>>,
+) -> HttpResponse {
     let raster_path = path.into_inner();
     let image_name = Path::new(&raster_path)
         .file_name()
         .map_or("image", |s| s.to_str().unwrap());
+    // TODO: Parse query params
+    println!("query_params: {:?}", query.get("SERVICE"));
     respond_with_raster(&raster_path, |ds| match wms::capabilities(image_name, ds) {
         Ok(xml) => HttpResponse::Ok()
             .content_type(ContentType::xml())
