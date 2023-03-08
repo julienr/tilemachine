@@ -94,7 +94,7 @@ async fn default_route(req: HttpRequest) -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    simple_logger::init_with_level(log::Level::Debug).unwrap();
+    simple_logger::init_with_level(log::Level::Info).unwrap();
     setup_gdal();
     HttpServer::new(|| {
         App::new()
