@@ -9,6 +9,7 @@ use gdal::Dataset;
 use std::collections::HashMap;
 
 mod bbox;
+mod ds_utils;
 mod geojson;
 mod raster;
 mod wms;
@@ -23,7 +24,7 @@ fn setup_gdal() {
     env::set_var("AWS_VIRTUAL_HOSTING", "FALSE");
     env::set_var("AWS_HTTPS", "FALSE");
     // TODO: Enable for verbose debugging
-    env::set_var("CPL_DEBUG", "1");
+    env::set_var("CPL_DEBUG", "0");
 }
 
 // Opens the given raster and response by applying f on it

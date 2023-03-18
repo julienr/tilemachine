@@ -1,7 +1,6 @@
 use std::f64::consts::PI;
-use std::io::BufWriter;
 
-use gdal::raster::ResampleAlg;
+use crate::ds_utils::read_ds_into_png;
 use gdal::{spatial_ref::SpatialRef, Dataset, DriverManager};
 use gdal_sys::OSRAxisMappingStrategy;
 
@@ -99,25 +98,5 @@ pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) -> Vec<u8> {
         "extracting_tile for x={:?}, y={:?}, zoom={:?}, tile_geo={:?}",
         x, y, zoom, tile_geo
     );
-    let buf = tile_ds
-        .read_as::<u8>(
-            (0, 0),
-            (TILE_SIZE as usize, TILE_SIZE as usize),
-            (TILE_SIZE as usize, TILE_SIZE as usize),
-            Some(ResampleAlg::Bilinear),
-        )
-        .unwrap();
-    println!("buf len={:?}", buf.data.len());
-    {
-        let mut out_buf = Vec::new();
-        {
-            let w = BufWriter::new(&mut out_buf);
-            let mut encoder = png::Encoder::new(w, TILE_SIZE as u32, TILE_SIZE as u32);
-            encoder.set_color(png::ColorType::Rgba);
-            encoder.set_depth(png::BitDepth::Eight);
-            let mut writer = encoder.write_header().unwrap();
-            writer.write_image_data(&buf.data).unwrap();
-        }
-        out_buf
-    }
+    read_ds_into_png(&tile_ds)
 }
