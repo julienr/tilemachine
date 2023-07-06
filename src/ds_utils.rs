@@ -2,23 +2,27 @@ use gdal::raster::ResampleAlg;
 use gdal::Dataset;
 use std::io::BufWriter;
 
-/*
 // TODO: This require 'rasterIO' to be exposed on the Dataset, see
 // https://github.com/georust/gdal/pull/374
-fn read_ds_at_once(ds: &Dataset) -> Vec<u8> {
-    ds.read_as::<u8>(
-        (0, 0),
-        (TILE_SIZE as usize, TILE_SIZE as usize),
-        (TILE_SIZE as usize, TILE_SIZE as usize),
-        Some(ResampleAlg::Bilinear),
-    )
-    .unwrap()
-    .data
+fn read_ds_at_once(ds: &Dataset) -> (Vec<u8>, (usize, usize)) {
+    let size = ds.raster_size();
+    let buf = ds
+        .read_as::<u8>(
+            (0, 0),
+            (size.0, size.1),
+            (size.0, size.1),
+            Some(ResampleAlg::Bilinear),
+            gdal::ImageInterleaving::Pixel,
+            gdal::BandSelection::All,
+        )
+        .unwrap()
+        .data;
+    (buf, size)
 }
-*/
 
 // Reads the whole dataset into a buffer
 // Returns the buffer and its size (width, height)
+#[allow(dead_code)]
 pub fn read_ds_band_by_band(ds: &Dataset) -> (Vec<u8>, (usize, usize)) {
     let nbands = ds.raster_count() as usize;
     let size = ds.raster_size();
@@ -44,7 +48,9 @@ pub fn read_ds_band_by_band(ds: &Dataset) -> (Vec<u8>, (usize, usize)) {
 
 // Reads the whole dataset into a PNG image
 pub fn read_ds_into_png(ds: &Dataset) -> Vec<u8> {
-    let (buf, size) = read_ds_band_by_band(ds);
+    println!("ds.raster_count: {}", ds.raster_count());
+    // let (buf, size) = read_ds_band_by_band(ds);
+    let (buf, size) = read_ds_at_once(ds);
     let mut out_buf = Vec::new();
     {
         let w = BufWriter::new(&mut out_buf);
