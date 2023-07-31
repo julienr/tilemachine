@@ -2,6 +2,10 @@
 name = "tilemachine"
 version = "0.1.0"
 edition = "2021"
+default-run = "tilemachine"
+
+[[bin]]
+name = "jstest"
 
 [dependencies]
 actix-web = "4"
@@ -17,3 +21,4 @@ png = "0.17.7"
 serde = { version = "1.0.152", features = ["derive"] }
 handlebars = "4.3.6"
 serde_json = "1.0.94"
+v8 = "0.74.3"
