@@ -18,7 +18,7 @@ fn get_capabilities_xml(
     let tpl = include_str!("wms_capabilities.xml");
     reg.render_template(
         tpl,
-        &json!({"service_name": "mapmachine", "layer_name": layer_name, "bbox": layer_bbox.to_array()}),
+        &json!({"service_name": "tilemachine", "layer_name": layer_name, "bbox": layer_bbox.to_array()}),
     )
     .map_err(|e| e.into())
 }
