@@ -8,12 +8,9 @@ use actix_web::{
 use gdal::Dataset;
 use std::collections::HashMap;
 
-mod bbox;
-mod ds_utils;
-mod geojson;
-mod raster;
-mod wms;
-mod xyz;
+use tilemachine::raster;
+use tilemachine::wms;
+use tilemachine::xyz;
 
 fn setup_gdal() {
     env::set_var("VSI_CACHE", "TRUE");
