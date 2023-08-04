@@ -9,5 +9,8 @@ help:
 watch:
 	cargo watch -x run
 
+jstest:
+	cargo run --bin jstest && eog out.png
+
 minio:
 	docker-compose up
