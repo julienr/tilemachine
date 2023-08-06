@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::time::Instant;
+use tilemachine::jsengine;
 
 fn load_tile() -> (Vec<u8>, usize, usize) {
     let decoder = png::Decoder::new(File::open("example_data/tile.png").unwrap());
@@ -37,69 +38,23 @@ fn save_tile(bytes: &[u8], size: (usize, usize)) {
 }
 
 fn main() {
-    let platform = v8::new_default_platform(0, false).make_shared();
-    v8::V8::initialize_platform(platform);
-    v8::V8::initialize();
-
-    let isolate = &mut v8::Isolate::new(Default::default());
-    let scope = &mut v8::HandleScope::new(isolate);
-    let context = v8::Context::new(scope);
-    let scope = &mut v8::ContextScope::new(scope, context);
-
+    let mut engine = jsengine::JSEngine::default();
     let (mut tile_data, width, height) = load_tile();
-    let code = v8::String::new(scope, "return [r * 2, g, b]").unwrap();
-    let args = [
-        v8::String::new(scope, "r").unwrap(),
-        v8::String::new(scope, "g").unwrap(),
-        v8::String::new(scope, "b").unwrap(),
-    ];
-    let function = v8::script_compiler::compile_function(
-        scope,
-        v8::script_compiler::Source::new(code, None),
-        &args,
-        &[],
-        v8::script_compiler::CompileOptions::NoCompileOptions,
-        v8::script_compiler::NoCacheReason::NoReason,
-    )
-    .unwrap();
+
     let start = Instant::now();
-    for i in 0..height {
-        for j in 0..width {
-            let function_scope = &mut v8::HandleScope::new(scope);
-            let rgb = &mut tile_data[i * width * 3 + j * 3..i * width * 3 + (j + 1) * 3];
-            let args = [
-                v8::Number::new(function_scope, rgb[0] as f64).into(),
-                v8::Number::new(function_scope, rgb[1] as f64).into(),
-                v8::Number::new(function_scope, rgb[2] as f64).into(),
-            ];
-            let function_this: v8::Local<'_, v8::Value> = v8::null(function_scope).into();
-            let return_value = function.call(function_scope, function_this, &args).unwrap();
-            let return_scope = &mut v8::HandleScope::new(function_scope);
-            if !return_value.is_array() {
-                panic!(
-                    "Expected an array as return type, got {:?}",
-                    return_value.type_repr()
-                );
+    let code = "return [r * 2, g, b]";
+    engine.exec(code, &mut |compiled_func| {
+        for i in 0..height {
+            for j in 0..width {
+                let rgb = &mut tile_data[i * width * 3 + j * 3..i * width * 3 + (j + 1) * 3];
+                let output_rgb = compiled_func(rgb[0], rgb[1], rgb[2]);
+
+                rgb[0] = output_rgb[0];
+                rgb[1] = output_rgb[1];
+                rgb[2] = output_rgb[2];
             }
-            let return_array = v8::Local::<v8::Array>::try_from(return_value).unwrap();
-
-            let mut extract_channel = |i: u32| -> u8 {
-                let mut v = return_array
-                    .get_index(return_scope, i)
-                    .unwrap()
-                    .number_value(return_scope)
-                    .unwrap();
-                if v > 255.0 {
-                    v = 255.0;
-                }
-                v as u8
-            };
-
-            rgb[0] = extract_channel(0);
-            rgb[1] = extract_channel(1);
-            rgb[2] = extract_channel(2);
         }
-    }
+    });
     save_tile(&tile_data, (width, height));
     let duration = start.elapsed();
     println!("took {:?}", duration);
