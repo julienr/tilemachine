@@ -43,7 +43,7 @@ fn main() {
 
     let start = Instant::now();
     let code = "return [r * 2, g, b]";
-    engine.exec(code, &mut |compiled_func| {
+    engine.compile(code, &mut |compiled_func| {
         for i in 0..height {
             for j in 0..width {
                 let rgb = &mut tile_data[i * width * 3 + j * 3..i * width * 3 + (j + 1) * 3];

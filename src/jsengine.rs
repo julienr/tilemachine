@@ -63,7 +63,7 @@ fn run_on_pixel(
 }
 
 impl JSEngine {
-    pub fn exec<F>(&mut self, code: &str, callback: &mut F)
+    pub fn compile<F>(&mut self, code: &str, callback: &mut F)
     where
         F: FnMut(&mut dyn FnMut(u8, u8, u8) -> [u8; 3]),
     {
@@ -93,9 +93,9 @@ impl JSEngine {
         }
     }
 
-    pub fn exec_once(&mut self, code: &str, r: u8, g: u8, b: u8) -> [u8; 3] {
+    pub fn compile_and_run_once(&mut self, code: &str, r: u8, g: u8, b: u8) -> [u8; 3] {
         let mut output: [u8; 3] = [0, 0, 0];
-        self.exec(code, &mut |compiled_func| {
+        self.compile(code, &mut |compiled_func| {
             output = compiled_func(r, g, b);
         });
         output
@@ -109,7 +109,7 @@ mod tests {
     fn test_js_engine_exec() {
         let mut engine = JSEngine::default();
         let code = "return [r * 2, g * 3, b * 4]";
-        let result = engine.exec_once(code, 1, 1, 1);
+        let result = engine.compile_and_run_once(code, 1, 1, 1);
         assert!(result.iter().eq([2, 3, 4].iter()));
     }
 }
