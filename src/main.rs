@@ -67,7 +67,7 @@ async fn get_wms(
 async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse {
     let (raster_path, z, y, x) = path.into_inner();
     respond_with_raster(&raster_path, |ds| {
-        let pngdata = xyz::extract_tile(ds, x, y, z);
+        let pngdata = xyz::extract_tile_as_png(ds, &xyz::TileCoords { x, y, zoom: z });
         HttpResponse::Ok()
             .content_type(ContentType::png())
             .body(pngdata)

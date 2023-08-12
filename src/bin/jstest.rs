@@ -2,60 +2,61 @@
 // on a tile
 // Usage:
 // `cargo run --bin jstest && eog out.png`
+use gdal::Dataset;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::time::Instant;
+use tilemachine::custom_script::CustomScript;
 use tilemachine::jsengine;
+use tilemachine::jsengine::ImageData;
+use tilemachine::utils::Result;
+use tilemachine::xyz::TileCoords;
 
-fn load_tile() -> (Vec<u8>, usize, usize) {
-    let decoder = png::Decoder::new(File::open("example_data/tile.png").unwrap());
-    let mut reader = decoder.read_info().unwrap();
-    let height = reader.info().height;
-    let width = reader.info().width;
-    if reader.info().color_type != png::ColorType::Rgb {
-        panic!("Expected RGB color type");
-    }
-    let mut buf = vec![0; reader.output_buffer_size()];
-    let info = reader.next_frame(&mut buf).unwrap();
-    let bytes = &buf[..info.buffer_size()];
-    (bytes.into(), width as usize, height as usize)
-}
-
-fn save_tile(bytes: &[u8], size: (usize, usize)) {
+fn save_tile(image_data: &ImageData<u8>) {
     let mut out_buf = Vec::new();
     {
         let w = BufWriter::new(&mut out_buf);
-        let mut encoder = png::Encoder::new(w, size.0 as u32, size.1 as u32);
-        encoder.set_color(png::ColorType::Rgb);
+        let mut encoder = png::Encoder::new(w, image_data.width as u32, image_data.height as u32);
+        encoder.set_color(png::ColorType::Rgba);
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder.write_header().unwrap();
-        writer.write_image_data(bytes).unwrap();
+        writer.write_image_data(&image_data.data).unwrap();
     }
 
     let mut f = File::create("out.png").unwrap();
     f.write_all(out_buf.as_slice()).unwrap();
 }
 
+fn open_dataset(filename: &str) -> Result<Dataset> {
+    let ds = Dataset::open(filename)?;
+    Ok(ds)
+}
+
 fn main() {
     let mut engine = jsengine::JSEngine::default();
-    let (mut tile_data, width, height) = load_tile();
 
-    let start = Instant::now();
-    let code = "return [r * 2, g, b]";
-    engine.compile(code, &mut |compiled_func| {
-        for i in 0..height {
-            for j in 0..width {
-                let rgb = &mut tile_data[i * width * 3 + j * 3..i * width * 3 + (j + 1) * 3];
-                let output_rgb = compiled_func(rgb[0], rgb[1], rgb[2]);
-
-                rgb[0] = output_rgb[0];
-                rgb[1] = output_rgb[1];
-                rgb[2] = output_rgb[2];
-            }
+    let script = r#"
+        {
+            "inputs": {
+                "rgb": "example_data/raster1.tif",
+                "dsm": "example_data/raster1_fake_dsm_cog.tif"
+            },
+            "script": "return [3 * dsm[0], rgb[1], rgb[2], 255]"
         }
-    });
-    save_tile(&tile_data, (width, height));
+    "#;
+
+    let script = CustomScript::new_from_str(script).unwrap();
+    let tile_coords = TileCoords {
+        x: 175402,
+        y: 410750,
+        zoom: 20,
+    };
+    let start = Instant::now();
+    let out_data = script
+        .execute_on_tile(&tile_coords, &open_dataset, &mut engine)
+        .unwrap();
     let duration = start.elapsed();
     println!("took {:?}", duration);
+    save_tile(&out_data);
 }

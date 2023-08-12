@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 
-use crate::ds_utils::read_ds_into_png;
+use crate::ds_utils::{image_bytes_to_png, read_ds_at_once};
 use gdal::{spatial_ref::SpatialRef, Dataset, DriverManager};
 use gdal_sys::OSRAxisMappingStrategy;
 
@@ -20,7 +20,13 @@ const INITIAL_RESOLUTION: f64 = EQUATOR_LENGTH_M / 256.0;
 // it is technically only valid up to 85.06 degree and here we compute up to 90 degrees
 const EPSG_3857_ORIGIN_SHIFT: f64 = EQUATOR_LENGTH_M / 2.0;
 
-const TILE_SIZE: u64 = 256;
+pub const TILE_SIZE: u64 = 256;
+
+pub struct TileCoords {
+    pub x: u64,
+    pub y: u64,
+    pub zoom: u64,
+}
 
 // Returns the resolution in meters at the equator for the given zoom level. Note that EPSG:3857
 // has quite large resolution deformation as you move away from the equator
@@ -59,10 +65,11 @@ fn compute_tile_bounds(x: u64, y: u64, zoom: u64) -> TileBounds {
     }
 }
 
-pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) -> Vec<u8> {
+// TODO: Return ImageData
+pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> (Vec<u8>, (usize, usize)) {
     // We serve XYZ tiles => reverse y
     // TODO: Is this the right place to do it ? Should this be in compute_tile_bounds ?
-    let y = ((2.0_f64.powf(zoom as f64) - 1.0) - y as f64) as u64;
+    let y = ((2.0_f64.powf(coords.zoom as f64) - 1.0) - coords.y as f64) as u64;
 
     // TODO: Early return if tile out of raster
     // TODO: Early return if raster invisible in tile (covers too little)
@@ -78,9 +85,9 @@ pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) -> Vec<u8> {
         .set_color_interpretation(gdal::raster::ColorInterpretation::AlphaBand)
         .unwrap();
 
-    let tile_bounds = compute_tile_bounds(x, y, zoom);
+    let tile_bounds = compute_tile_bounds(coords.x, y, coords.zoom);
 
-    let pixel_size = resolution_at_zoom(zoom);
+    let pixel_size = resolution_at_zoom(coords.zoom);
     let tile_geo = [
         tile_bounds.xmin,
         pixel_size,
@@ -96,7 +103,13 @@ pub fn extract_tile(ds: &Dataset, x: u64, y: u64, zoom: u64) -> Vec<u8> {
     gdal::raster::reproject(ds, &tile_ds).unwrap();
     println!(
         "extracting_tile for x={:?}, y={:?}, zoom={:?}, tile_geo={:?}",
-        x, y, zoom, tile_geo
+        coords.x, y, coords.zoom, tile_geo
     );
-    read_ds_into_png(&tile_ds)
+    let (buf, size) = read_ds_at_once(&tile_ds);
+    (buf, size)
+}
+
+pub fn extract_tile_as_png(ds: &Dataset, coords: &TileCoords) -> Vec<u8> {
+    let (buf, size) = extract_tile(ds, coords);
+    image_bytes_to_png(&buf, size)
 }

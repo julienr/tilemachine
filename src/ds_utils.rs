@@ -4,7 +4,7 @@ use std::io::BufWriter;
 
 // TODO: This require 'rasterIO' to be exposed on the Dataset, see
 // https://github.com/georust/gdal/pull/374
-fn read_ds_at_once(ds: &Dataset) -> (Vec<u8>, (usize, usize)) {
+pub fn read_ds_at_once(ds: &Dataset) -> (Vec<u8>, (usize, usize)) {
     let size = ds.raster_size();
     let buf = ds
         .read_as::<u8>(
@@ -47,10 +47,7 @@ pub fn read_ds_band_by_band(ds: &Dataset) -> (Vec<u8>, (usize, usize)) {
 }
 
 // Reads the whole dataset into a PNG image
-pub fn read_ds_into_png(ds: &Dataset) -> Vec<u8> {
-    println!("ds.raster_count: {}", ds.raster_count());
-    // let (buf, size) = read_ds_band_by_band(ds);
-    let (buf, size) = read_ds_at_once(ds);
+pub fn image_bytes_to_png(buf: &[u8], size: (usize, usize)) -> Vec<u8> {
     let mut out_buf = Vec::new();
     {
         let w = BufWriter::new(&mut out_buf);
@@ -58,7 +55,7 @@ pub fn read_ds_into_png(ds: &Dataset) -> Vec<u8> {
         encoder.set_color(png::ColorType::Rgba);
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder.write_header().unwrap();
-        writer.write_image_data(&buf).unwrap();
+        writer.write_image_data(buf).unwrap();
     }
     out_buf
 }
