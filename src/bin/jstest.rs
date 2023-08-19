@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::time::Instant;
-use tilemachine::custom_script::{CustomScript, ImageData, JSEngine};
+use tilemachine::custom_script::{CustomScript, ImageData};
 use tilemachine::utils::Result;
 use tilemachine::xyz::TileCoords;
 
@@ -32,8 +32,6 @@ fn open_dataset(filename: &str) -> Result<Dataset> {
 }
 
 fn main() {
-    let mut engine = JSEngine::default();
-
     let script = r#"
         {
             "inputs": {
@@ -52,7 +50,7 @@ fn main() {
     };
     let start = Instant::now();
     let out_data = script
-        .execute_on_tile(&tile_coords, &open_dataset, &mut engine)
+        .execute_on_tile(&tile_coords, &open_dataset)
         .unwrap();
     let duration = start.elapsed();
     println!("took {:?}", duration);

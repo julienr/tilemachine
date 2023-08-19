@@ -20,9 +20,9 @@ impl CustomScript {
     pub fn execute_on_tile(
         &self,
         coords: &TileCoords,
-        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
-        engine: &mut JSEngine,
+        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>
     ) -> Result<ImageData<u8>> {
+        let mut engine = JSEngine::default();
         let mut coll = ImageDataCollection::<f64>::new(TILE_SIZE as usize);
         for (name, filename) in self.inputs.iter() {
             let ds = open_dataset_fn(filename)?;
@@ -42,7 +42,7 @@ impl CustomScript {
 
 static mut PLATFORM_INITIALIZED: AtomicBool = AtomicBool::new(false);
 
-pub struct JSEngine {
+struct JSEngine {
     isolate: v8::OwnedIsolate,
 }
 
