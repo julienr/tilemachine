@@ -1,6 +1,9 @@
 use std::f64::consts::PI;
 
-use crate::ds_utils::{image_bytes_to_png, read_ds_at_once};
+use crate::{
+    ds_utils::{image_bytes_to_png, read_ds_at_once},
+    utils::ImageData,
+};
 use gdal::{spatial_ref::SpatialRef, Dataset, DriverManager};
 use gdal_sys::OSRAxisMappingStrategy;
 
@@ -65,8 +68,7 @@ fn compute_tile_bounds(x: u64, y: u64, zoom: u64) -> TileBounds {
     }
 }
 
-// TODO: Return ImageData
-pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> (Vec<u8>, (usize, usize)) {
+pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> ImageData<u8> {
     // We serve XYZ tiles => reverse y
     // TODO: Is this the right place to do it ? Should this be in compute_tile_bounds ?
     let y = ((2.0_f64.powf(coords.zoom as f64) - 1.0) - coords.y as f64) as u64;
@@ -105,11 +107,10 @@ pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> (Vec<u8>, (usize, usiz
         "extracting_tile for x={:?}, y={:?}, zoom={:?}, tile_geo={:?}",
         coords.x, y, coords.zoom, tile_geo
     );
-    let (buf, size) = read_ds_at_once(&tile_ds);
-    (buf, size)
+    read_ds_at_once(&tile_ds)
 }
 
 pub fn extract_tile_as_png(ds: &Dataset, coords: &TileCoords) -> Vec<u8> {
-    let (buf, size) = extract_tile(ds, coords);
-    image_bytes_to_png(&buf, size)
+    let image_data = extract_tile(ds, coords);
+    image_bytes_to_png(&image_data)
 }

@@ -27,11 +27,13 @@ impl CustomScript {
         let mut coll = ImageDataCollection::<f64>::new(TILE_SIZE as usize);
         for (name, filename) in self.inputs.iter() {
             let ds = open_dataset_fn(filename)?;
-            let (data_u8, size) = extract_tile(&ds, coords);
-            let data_f64 = data_u8.iter().map(|e| *e as f64).collect();
-            // TODO: Move ImageData to xyz
+            let image_data = extract_tile(&ds, coords);
+            // Convert from u8 to f64 for computations
+            let data_f64 = image_data.data.iter().map(|e| *e as f64).collect();
             let image_data = ImageData::from_vec(
-                size.0, size.1, 4, // RGBA
+                image_data.width,
+                image_data.height,
+                image_data.channels,
                 data_f64,
             );
             coll.images.push((name.to_string(), image_data));
