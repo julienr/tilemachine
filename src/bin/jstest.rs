@@ -7,8 +7,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::time::Instant;
-use tilemachine::custom_script::{CustomScript, ImageData};
-use tilemachine::utils::Result;
+use tilemachine::custom_script::CustomScript;
+use tilemachine::utils::{ImageData, Result};
 use tilemachine::xyz::TileCoords;
 
 fn save_tile(image_data: &ImageData<u8>) {
@@ -49,9 +49,7 @@ fn main() {
         zoom: 20,
     };
     let start = Instant::now();
-    let out_data = script
-        .execute_on_tile(&tile_coords, &open_dataset)
-        .unwrap();
+    let out_data = script.execute_on_tile(&tile_coords, &open_dataset).unwrap();
     let duration = start.elapsed();
     println!("took {:?}", duration);
     save_tile(&out_data);

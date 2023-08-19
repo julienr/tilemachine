@@ -1,3 +1,4 @@
+use crate::utils::ImageData;
 use crate::utils::Result;
 use crate::xyz::{extract_tile, TileCoords, TILE_SIZE};
 use gdal::Dataset;
@@ -20,7 +21,7 @@ impl CustomScript {
     pub fn execute_on_tile(
         &self,
         coords: &TileCoords,
-        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>
+        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
     ) -> Result<ImageData<u8>> {
         let mut engine = JSEngine::default();
         let mut coll = ImageDataCollection::<f64>::new(TILE_SIZE as usize);
@@ -180,41 +181,6 @@ impl<T> ImageDataCollection<T> {
             images: vec![],
             tile_size,
         }
-    }
-}
-
-pub struct ImageData<T> {
-    pub width: usize,
-    pub height: usize,
-    pub channels: usize,
-    // Data stored in row-major order, channels last
-    pub data: Vec<T>,
-}
-
-impl<T: Default + Clone> ImageData<T> {
-    pub fn new(width: usize, height: usize, channels: usize) -> ImageData<T> {
-        ImageData {
-            width,
-            height,
-            channels,
-            data: vec![T::default(); width * height * channels],
-        }
-    }
-
-    pub fn from_vec(width: usize, height: usize, channels: usize, data: Vec<T>) -> ImageData<T> {
-        assert!(data.len() == width * height * channels);
-        ImageData {
-            width,
-            height,
-            channels,
-            data,
-        }
-    }
-
-    pub fn pixel_data(&self, i: usize, j: usize) -> &[T] {
-        let start_index = i * self.width * self.channels + j * self.channels;
-        let end_index = start_index + self.channels;
-        &self.data[start_index..end_index]
     }
 }
 
