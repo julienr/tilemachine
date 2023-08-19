@@ -2,7 +2,6 @@ pub mod bbox;
 pub mod custom_script;
 pub mod ds_utils;
 pub mod geojson;
-pub mod jsengine;
 pub mod raster;
 pub mod utils;
 pub mod wms;

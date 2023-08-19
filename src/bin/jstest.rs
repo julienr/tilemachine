@@ -7,9 +7,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::time::Instant;
-use tilemachine::custom_script::CustomScript;
-use tilemachine::jsengine;
-use tilemachine::jsengine::ImageData;
+use tilemachine::custom_script::{CustomScript, ImageData, JSEngine};
 use tilemachine::utils::Result;
 use tilemachine::xyz::TileCoords;
 
@@ -34,7 +32,7 @@ fn open_dataset(filename: &str) -> Result<Dataset> {
 }
 
 fn main() {
-    let mut engine = jsengine::JSEngine::default();
+    let mut engine = JSEngine::default();
 
     let script = r#"
         {
