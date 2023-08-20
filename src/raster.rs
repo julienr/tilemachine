@@ -1,9 +1,9 @@
 use crate::bbox::BoundingBox;
-use crate::geojson::PolygonGeometry;
-use gdal::{errors::GdalError, spatial_ref::CoordTransform, spatial_ref::SpatialRef, Dataset};
+use crate::utils::Result;
+use gdal::{spatial_ref::CoordTransform, spatial_ref::SpatialRef, Dataset};
 use gdal_sys::OSRAxisMappingStrategy;
 
-fn raster_local_bbox(ds: &Dataset) -> Result<BoundingBox, GdalError> {
+fn raster_local_bbox(ds: &Dataset) -> Result<BoundingBox> {
     let geot = ds.geo_transform()?;
     let (width, height) = ds.raster_size();
 
@@ -15,7 +15,7 @@ fn raster_local_bbox(ds: &Dataset) -> Result<BoundingBox, GdalError> {
     })
 }
 
-pub fn raster_projected_bbox(ds: &Dataset, epsg: u32) -> Result<BoundingBox, GdalError> {
+pub fn raster_projected_bbox(ds: &Dataset, epsg: u32) -> Result<BoundingBox> {
     let local_bbox = raster_local_bbox(ds)?;
     let raster_srs = ds.spatial_ref()?;
     raster_srs.set_axis_mapping_strategy(OSRAxisMappingStrategy::OAMS_TRADITIONAL_GIS_ORDER);
@@ -25,13 +25,6 @@ pub fn raster_projected_bbox(ds: &Dataset, epsg: u32) -> Result<BoundingBox, Gda
     local_bbox.transform(&transform)
 }
 
-pub fn bounds(ds: &Dataset) -> Result<PolygonGeometry, GdalError> {
-    let bbox = raster_projected_bbox(ds, 4326)?;
-    Ok(PolygonGeometry::from_exterior(vec![
-        [bbox.xmin, bbox.ymin],
-        [bbox.xmax, bbox.ymin],
-        [bbox.xmax, bbox.ymax],
-        [bbox.xmin, bbox.ymax],
-        [bbox.xmin, bbox.ymin],
-    ]))
+pub fn wgs84_bbox(ds: &Dataset) -> Result<BoundingBox> {
+    raster_projected_bbox(ds, 4326)
 }

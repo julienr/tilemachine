@@ -1,7 +1,10 @@
+use crate::bbox::BoundingBox;
+use crate::geojson::PolygonGeometry;
 use crate::utils::ImageData;
 use crate::utils::Result;
 use crate::xyz::{extract_tile, TileCoords, TILE_SIZE};
 use gdal::Dataset;
+use crate::raster;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::{sync::atomic::AtomicBool, sync::atomic::Ordering};
@@ -41,6 +44,20 @@ impl CustomScript {
         let output = engine.execute_on_tile(&self.script, &coll);
         Ok(output)
     }
+
+    pub fn get_bounds(
+        &self,
+        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>
+    ) -> Result<PolygonGeometry> {
+        let mut bboxes: Vec<BoundingBox> = vec![];
+        for (_name, filename) in self.inputs.iter() {
+            let ds = open_dataset_fn(filename)?;
+            bboxes.push(raster::wgs84_bbox(&ds)?);
+        }
+
+        Ok(BoundingBox::union(&bboxes)?.into())
+    }
+
 }
 
 static mut PLATFORM_INITIALIZED: AtomicBool = AtomicBool::new(false);

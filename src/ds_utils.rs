@@ -1,7 +1,6 @@
 use crate::utils::ImageData;
 use gdal::raster::ResampleAlg;
 use gdal::Dataset;
-use std::io::BufWriter;
 
 // TODO: This require 'rasterIO' to be exposed on the Dataset, see
 // https://github.com/georust/gdal/pull/374
@@ -46,18 +45,4 @@ pub fn read_ds_band_by_band(ds: &Dataset) -> ImageData<u8> {
         }
     }
     image_data
-}
-
-// Reads the whole dataset into a PNG image
-pub fn image_bytes_to_png(image_data: &ImageData<u8>) -> Vec<u8> {
-    let mut out_buf = Vec::new();
-    {
-        let w = BufWriter::new(&mut out_buf);
-        let mut encoder = png::Encoder::new(w, image_data.width as u32, image_data.height as u32);
-        encoder.set_color(png::ColorType::Rgba);
-        encoder.set_depth(png::BitDepth::Eight);
-        let mut writer = encoder.write_header().unwrap();
-        writer.write_image_data(&image_data.data).unwrap();
-    }
-    out_buf
 }
