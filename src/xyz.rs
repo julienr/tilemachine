@@ -1,9 +1,6 @@
 use std::f64::consts::PI;
 
-use crate::{
-    ds_utils::{read_ds_at_once},
-    utils::ImageData,
-};
+use crate::{ds_utils::read_ds_at_once, utils::ImageData};
 use gdal::{spatial_ref::SpatialRef, Dataset, DriverManager};
 use gdal_sys::OSRAxisMappingStrategy;
 

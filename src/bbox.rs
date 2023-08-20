@@ -1,5 +1,5 @@
+use crate::{geojson::PolygonGeometry, utils::Error, utils::Result, utils::ScriptError};
 use gdal::spatial_ref::CoordTransform;
-use crate::{geojson::PolygonGeometry, utils::Error, utils::ScriptError, utils::Result};
 
 #[derive(Clone)]
 pub struct BoundingBox {

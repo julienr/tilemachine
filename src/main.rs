@@ -5,12 +5,12 @@ use actix_web::{
     get, http::header::ContentType, middleware, web, App, HttpRequest, HttpResponse, HttpServer,
 };
 use gdal::Dataset;
-use tilemachine::xyz::TileCoords;
 use std::collections::HashMap;
+use tilemachine::xyz::TileCoords;
 
-use tilemachine::wms;
-use tilemachine::utils::Result;
 use tilemachine::custom_script::CustomScript;
+use tilemachine::utils::Result;
+use tilemachine::wms;
 
 fn setup_gdal() {
     env::set_var("VSI_CACHE", "TRUE");
@@ -24,7 +24,7 @@ fn setup_gdal() {
     env::set_var("CPL_DEBUG", "0");
 }
 
-fn respond_with_error<E: std::fmt::Debug>(message:&str, error: &E) -> HttpResponse {
+fn respond_with_error<E: std::fmt::Debug>(message: &str, error: &E) -> HttpResponse {
     log::error!("{}: {:?}", message, error);
     HttpResponse::InternalServerError().body(message.to_string())
 }
@@ -42,7 +42,7 @@ async fn get_wms(
 ) -> HttpResponse {
     let custom_script = match CustomScript::new_from_str(&path.into_inner()) {
         Ok(script) => script,
-        Err(e) => return respond_with_error("Failed to parse custom script", &e)
+        Err(e) => return respond_with_error("Failed to parse custom script", &e),
     };
     // TODO: Parse query params
     println!("query_params: {:?}", query.get("SERVICE"));
@@ -50,9 +50,7 @@ async fn get_wms(
         Ok(xml) => HttpResponse::Ok()
             .content_type(ContentType::xml())
             .body(xml),
-        Err(e) => {
-            respond_with_error("Failed to generate capabilities", &e)
-        }
+        Err(e) => respond_with_error("Failed to generate capabilities", &e),
     }
 }
 
@@ -62,14 +60,14 @@ async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse 
     let (custom_script, z, y, x) = path.into_inner();
     let custom_script = match CustomScript::new_from_str(&custom_script) {
         Ok(script) => script,
-        Err(e) => return respond_with_error("Failed to parse custom script", &e)
+        Err(e) => return respond_with_error("Failed to parse custom script", &e),
     };
-    match custom_script.execute_on_tile(&TileCoords{x, y, zoom: z}, &open_dataset_from_blobstore) {
-        Ok(image_data) => 
-            HttpResponse::Ok()
-                .content_type(ContentType::png())
-                .body(image_data.to_png()),
-        Err(e) => respond_with_error("Failed to extract tile", &e)
+    match custom_script.execute_on_tile(&TileCoords { x, y, zoom: z }, &open_dataset_from_blobstore)
+    {
+        Ok(image_data) => HttpResponse::Ok()
+            .content_type(ContentType::png())
+            .body(image_data.to_png()),
+        Err(e) => respond_with_error("Failed to extract tile", &e),
     }
 }
 
@@ -77,12 +75,12 @@ async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse 
 async fn get_bounds(path: web::Path<String>) -> HttpResponse {
     let custom_script = match CustomScript::new_from_str(&path.into_inner()) {
         Ok(script) => script,
-        Err(e) => return respond_with_error("Failed to parse custom script", &e)
+        Err(e) => return respond_with_error("Failed to parse custom script", &e),
     };
 
     match custom_script.get_bounds_as_polygon(&open_dataset_from_blobstore) {
         Ok(bounds) => HttpResponse::Ok().json(bounds),
-        Err(e) => respond_with_error("Failed to compute bounds", &e)
+        Err(e) => respond_with_error("Failed to compute bounds", &e),
     }
 }
 
@@ -96,6 +94,7 @@ async fn default_route(req: HttpRequest) -> HttpResponse {
 async fn main() -> std::io::Result<()> {
     simple_logger::init_with_level(log::Level::Info).unwrap();
     setup_gdal();
+
     HttpServer::new(|| {
         App::new()
             .wrap(middleware::Compress::default())

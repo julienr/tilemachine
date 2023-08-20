@@ -5,16 +5,16 @@ use gdal::Dataset;
 use handlebars::Handlebars;
 use serde_json::json;
 
-pub fn capabilities(script: &CustomScript, open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>) -> Result<String> {
+pub fn capabilities(
+    script: &CustomScript,
+    open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
+) -> Result<String> {
     let bbox = script.get_bounds(open_dataset_fn)?;
     // TODO: Give specific/unique names
     get_capabilities_xml("image", bbox)
 }
 
-fn get_capabilities_xml(
-    layer_name: &str,
-    layer_bbox: BoundingBox,
-) -> Result<String> {
+fn get_capabilities_xml(layer_name: &str, layer_bbox: BoundingBox) -> Result<String> {
     let reg = Handlebars::new();
     let tpl = include_str!("wms_capabilities.xml");
     reg.render_template(

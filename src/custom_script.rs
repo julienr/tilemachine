@@ -1,10 +1,10 @@
 use crate::bbox::BoundingBox;
 use crate::geojson::PolygonGeometry;
+use crate::raster;
 use crate::utils::ImageData;
 use crate::utils::Result;
 use crate::xyz::{extract_tile, TileCoords, TILE_SIZE};
 use gdal::Dataset;
-use crate::raster;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -45,10 +45,9 @@ impl CustomScript {
         Ok(output)
     }
 
-
     pub fn get_bounds(
         &self,
-        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>
+        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
     ) -> Result<BoundingBox> {
         let mut bboxes: Vec<BoundingBox> = vec![];
         for (_name, filename) in self.inputs.iter() {
@@ -61,11 +60,10 @@ impl CustomScript {
 
     pub fn get_bounds_as_polygon(
         &self,
-        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>
+        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
     ) -> Result<PolygonGeometry> {
         Ok(self.get_bounds(open_dataset_fn)?.into())
     }
-
 }
 
 static PLATFORM_INITIALIZED: OnceLock<bool> = OnceLock::new();

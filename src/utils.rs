@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum ScriptError {
-    NotEnoughinputs
+    NotEnoughinputs,
 }
 
 #[derive(Debug)]
@@ -14,7 +14,7 @@ pub enum Error {
     GdalError(gdal::errors::GdalError),
     SerdeError(serde_json::Error),
     ScriptError(ScriptError),
-    HandlebarsError(RenderError)
+    HandlebarsError(RenderError),
 }
 
 impl From<serde_json::Error> for Error {
