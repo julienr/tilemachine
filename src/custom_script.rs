@@ -7,7 +7,7 @@ use gdal::Dataset;
 use crate::raster;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::{sync::atomic::AtomicBool, sync::atomic::Ordering};
+use std::sync::OnceLock;
 
 #[derive(Deserialize)]
 pub struct CustomScript {
@@ -68,7 +68,7 @@ impl CustomScript {
 
 }
 
-static mut PLATFORM_INITIALIZED: AtomicBool = AtomicBool::new(false);
+static PLATFORM_INITIALIZED: OnceLock<bool> = OnceLock::new();
 
 struct JSEngine {
     isolate: v8::OwnedIsolate,
@@ -78,14 +78,15 @@ impl Default for JSEngine {
     fn default() -> Self {
         // Doing platform initialization twice seems to lead to "Invalid global state"
         // so it looks like we need a singleton to ensure this is done exactly once
-        let needs_initialization = unsafe {
-            PLATFORM_INITIALIZED.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-        };
-        if needs_initialization.is_ok() {
+        let initialized = PLATFORM_INITIALIZED.get_or_init(|| {
             println!("initializing v8");
             let platform = v8::new_default_platform(0, false).make_shared();
             v8::V8::initialize_platform(platform);
             v8::V8::initialize();
+            true
+        });
+        if !initialized {
+            panic!("v8 not initialized")
         }
 
         let isolate = v8::Isolate::new(Default::default());
