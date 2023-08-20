@@ -1,5 +1,4 @@
 use std::env;
-use std::path::Path;
 
 use actix_files as fs;
 use actix_web::{
@@ -25,22 +24,6 @@ fn setup_gdal() {
     env::set_var("CPL_DEBUG", "0");
 }
 
-// Opens the given raster and response by applying f on it
-fn respond_with_raster<F>(raster_path: &String, f: F) -> HttpResponse
-where
-    F: Fn(&Dataset) -> HttpResponse,
-{
-    let mut vsi_path = "/vsis3/".to_owned();
-    vsi_path.push_str(raster_path.as_str());
-    match Dataset::open(vsi_path.as_str()) {
-        Ok(ds) => f(&ds),
-        Err(err) => {
-            println!("Error opening {:?}, err={:?}", err, raster_path);
-            HttpResponse::NotFound().body(format!("Error opening {:?}", raster_path))
-        }
-    }
-}
-
 fn respond_with_error<E: std::fmt::Debug>(message:&str, error: &E) -> HttpResponse {
     log::error!("{}: {:?}", message, error);
     HttpResponse::InternalServerError().body(message.to_string())
@@ -52,25 +35,25 @@ fn open_dataset_from_blobstore(raster_path: &str) -> Result<Dataset> {
     Ok(Dataset::open(vsi_path.as_str())?)
 }
 
-#[get("/wms/{raster_path:.+}/service")]
+#[get("/wms/{custom_script:.+}/service")]
 async fn get_wms(
     path: web::Path<String>,
     query: web::Query<HashMap<String, String>>,
 ) -> HttpResponse {
-    let raster_path = path.into_inner();
-    let image_name = Path::new(&raster_path)
-        .file_name()
-        .map_or("image", |s| s.to_str().unwrap());
+    let custom_script = match CustomScript::new_from_str(&path.into_inner()) {
+        Ok(script) => script,
+        Err(e) => return respond_with_error("Failed to parse custom script", &e)
+    };
     // TODO: Parse query params
     println!("query_params: {:?}", query.get("SERVICE"));
-    respond_with_raster(&raster_path, |ds| match wms::capabilities(image_name, ds) {
+    match wms::capabilities(&custom_script, &open_dataset_from_blobstore) {
         Ok(xml) => HttpResponse::Ok()
             .content_type(ContentType::xml())
             .body(xml),
         Err(e) => {
             respond_with_error("Failed to generate capabilities", &e)
         }
-    })
+    }
 }
 
 // raster_path can be a fullpath, in which case it needs to be urlencoded (%2F instead of /)
@@ -97,7 +80,7 @@ async fn get_bounds(path: web::Path<String>) -> HttpResponse {
         Err(e) => return respond_with_error("Failed to parse custom script", &e)
     };
 
-    match custom_script.get_bounds(&open_dataset_from_blobstore) {
+    match custom_script.get_bounds_as_polygon(&open_dataset_from_blobstore) {
         Ok(bounds) => HttpResponse::Ok().json(bounds),
         Err(e) => respond_with_error("Failed to compute bounds", &e)
     }

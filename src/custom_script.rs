@@ -45,17 +45,25 @@ impl CustomScript {
         Ok(output)
     }
 
+
     pub fn get_bounds(
         &self,
         open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>
-    ) -> Result<PolygonGeometry> {
+    ) -> Result<BoundingBox> {
         let mut bboxes: Vec<BoundingBox> = vec![];
         for (_name, filename) in self.inputs.iter() {
             let ds = open_dataset_fn(filename)?;
             bboxes.push(raster::wgs84_bbox(&ds)?);
         }
 
-        Ok(BoundingBox::union(&bboxes)?.into())
+        BoundingBox::union(&bboxes)
+    }
+
+    pub fn get_bounds_as_polygon(
+        &self,
+        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>
+    ) -> Result<PolygonGeometry> {
+        Ok(self.get_bounds(open_dataset_fn)?.into())
     }
 
 }

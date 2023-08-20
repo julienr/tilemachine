@@ -1,13 +1,14 @@
 use crate::bbox::BoundingBox;
-use crate::raster::raster_projected_bbox;
+use crate::custom_script::CustomScript;
 use crate::utils::Result;
 use gdal::Dataset;
 use handlebars::Handlebars;
 use serde_json::json;
 
-pub fn capabilities(image_name: &str, ds: &Dataset) -> Result<String> {
-    let bbox = raster_projected_bbox(ds, 4326)?;
-    get_capabilities_xml(image_name, bbox)
+pub fn capabilities(script: &CustomScript, open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>) -> Result<String> {
+    let bbox = script.get_bounds(open_dataset_fn)?;
+    // TODO: Give specific/unique names
+    get_capabilities_xml("image", bbox)
 }
 
 fn get_capabilities_xml(
