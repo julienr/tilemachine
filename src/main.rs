@@ -95,6 +95,12 @@ async fn main() -> std::io::Result<()> {
     simple_logger::init_with_level(log::Level::Info).unwrap();
     setup_gdal();
 
+    // actix defaults to `available_parallelism` but since GDAL network calls are blocking
+    // we benefit from having more threads than CPUs
+    // let num_threads = 4 * std::thread::available_parallelism().unwrap().get();
+    let num_threads = std::thread::available_parallelism().unwrap().get();
+    println!("using {} threads", num_threads);
+
     HttpServer::new(|| {
         App::new()
             .wrap(middleware::Compress::default())
@@ -105,6 +111,7 @@ async fn main() -> std::io::Result<()> {
             .default_service(web::route().to(default_route))
             .wrap(middleware::Logger::default())
     })
+    .workers(num_threads)
     .bind(("0.0.0.0", 8080))?
     .run()
     .await
