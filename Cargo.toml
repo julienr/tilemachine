@@ -8,8 +8,8 @@ default-run = "tilemachine"
 name = "jstest"
 
 [dependencies]
-actix-web = "4"
-actix-files = "0.6.0"
+actix-web = "4.3.1"
+actix-files = "0.6.2"
 simple_logger = "2.1.0"
 log = "0.4.14"
 # gdal = "0.14.0"
