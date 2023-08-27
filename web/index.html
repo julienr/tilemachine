@@ -39,13 +39,13 @@
     <div id="map">
     </div>
     <div id="overlay">
-      <p>Enter a raster blobname:</p>
+      <p>Custom script:</p>
       <form id="raster_form" action="/" method="GET">
         <!-- hidden input that gets the content of #editor -->
         <input name="custom_script" type="hidden" id="custom_script" />
-        <input type="submit" value="Display" />
+        <div id="editor"></div>
+        <input type="submit" value="Display" style="margin-top: 10px" />
       </form>
-      <div id="editor"></div>
     </div>
     <script>
       // Initalize ACE editor
