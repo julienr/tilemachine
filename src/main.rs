@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use tilemachine::xyz::TileCoords;
 
 use tilemachine::custom_script::CustomScript;
-use tilemachine::utils::Result;
+use tilemachine::utils::{Error, Result, ScriptError};
 use tilemachine::wms;
 
 fn setup_gdal() {
@@ -24,9 +24,22 @@ fn setup_gdal() {
     env::set_var("CPL_DEBUG", "0");
 }
 
-fn respond_with_error<E: std::fmt::Debug>(message: &str, error: &E) -> HttpResponse {
+fn respond_with_error(message: &str, error: &Error) -> HttpResponse {
     log::error!("{}: {:?}", message, error);
-    HttpResponse::InternalServerError().body(message.to_string())
+    let mut extended_message = message.to_string();
+    match error {
+        Error::ScriptError(ScriptError::CompilationError(reason)) => {
+            extended_message += &format!(": {}", reason);
+        }
+        Error::ScriptError(ScriptError::InvalidReturnType) => {
+            extended_message += ": invalid return type";
+        }
+        Error::ScriptError(ScriptError::RuntimeError(e)) => {
+            extended_message += &format!(": {}", e);
+        }
+        _ => {}
+    }
+    HttpResponse::InternalServerError().body(extended_message.to_string())
 }
 
 fn open_dataset_from_blobstore(raster_path: &str) -> Result<Dataset> {

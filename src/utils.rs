@@ -7,6 +7,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum ScriptError {
     NotEnoughinputs,
+    CompilationError(String),
+    RuntimeError(String),
+    InvalidReturnType,
 }
 
 #[derive(Debug)]
