@@ -28,8 +28,8 @@
         padding: 30px;
         z-index: 1000;
       }
-      #editor {
-        height: 400px;
+      .editor {
+        height: 200px;
         width: 600px;
         font-size: 14px;
       }
@@ -43,41 +43,21 @@
       <form id="raster_form" action="/" method="GET">
         <!-- hidden input that gets the content of #editor -->
         <input name="custom_script" type="hidden" id="custom_script" />
-        <div id="editor"></div>
+        <p>Inputs</p>
+        <div id="inputs-editor" class="editor"></div>
+        <p>Script</p>
+        <div id="script-editor" class="editor"></div>
         <input type="submit" value="Display" style="margin-top: 10px" />
       </form>
     </div>
+    <script src="main.js"></script>
     <script>
       // Initalize ACE editor
-      const editor = ace.edit("editor");
-      editor.setTheme("ace/theme/monokai");
-      editor.session.setMode("ace/mode/javascript");
-      // Update hidden textarea on editor change
-      editor.session.on("change", function () {
-        const textarea = document.getElementById("custom_script");
-        textarea.value = editor.session.getValue();
-      })
-      editor.setValue(JSON.stringify(
-        {
-          "inputs": {
-            "rgb": "rasters/raster1.tif"
-          },
-          "script": "return [rgb[0], rgb[1], rgb[2], rgb[3]]"
-        },
-        null,
-        2
-      ))
-
-      // Load raster specified in current URL
-      async function getBounds (customScript) {
-        const resp = await fetch("/bounds/" + encodeURIComponent(JSON.stringify(customScript)));
-        if (!resp.ok) {
-          const body = await resp.text()
-          throw new Error('Failed to get bounds :' + body);
-        }
-        return resp.json();
-      }
-
+      const scriptEditor = new CustomScriptEditor(
+        "custom_script",
+        "script-editor",
+        "inputs-editor"
+      )
       const params = new URLSearchParams(window.location.search);
 
       const map = L.map('map').setView([0, 30], 9);
@@ -89,16 +69,23 @@
       const customScript = JSON.parse(params.get("custom_script"));
       const rasterForm = document.getElementById("raster_form")
       if (customScript) {
-        editor.session.setValue(JSON.stringify(customScript, null, 2))
+        scriptEditor.setCustomScript(customScript)
         getBounds(customScript).then((bounds) => {
           bounds = L.latLngBounds(bounds.coordinates[0].map((coord) => L.latLng(coord[1], coord[0])))
           map.fitBounds(bounds)
+          // TODO: To ensure caching, should make sure the JSON encoding is deterministic
+          L.tileLayer('/tile/xyz/' + encodeURIComponent(JSON.stringify(customScript)) + '/{z}/{y}/{x}', {
+            // TODO: Obtain maxZoom from /bounds ?
+            maxZoom: 25
+          }).addTo(map);
         })
-        // TODO: To ensure caching, should make sure the JSON encoding is deterministic
-        L.tileLayer('/tile/xyz/' + encodeURIComponent(JSON.stringify(customScript)) + '/{z}/{y}/{x}', {
-          // TODO: Obtain maxZoom from /bounds ?
-          maxZoom: 25
-        }).addTo(map);
+      } else {
+        scriptEditor.setCustomScript({
+          "inputs": {
+              "rgb": "rasters/raster1.tif"
+          },
+          "script": "return [rgb[0], rgb[1], rgb[2], rgb[3]]"
+        })
       }
     </script>
   </body>
