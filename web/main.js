@@ -37,7 +37,11 @@ class CustomScriptEditor {
   }
 
   _onInputsEditorChanged () {
-    this.data.inputs = JSON.parse(this.inputsEditor.session.getValue())
+    try {
+      this.data.inputs = JSON.parse(this.inputsEditor.session.getValue())
+    } catch (e) {
+      // This will fail while editing because we're entering invalid json
+    }
     this._updateTextAreaFromData()
   }
 
