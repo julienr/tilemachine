@@ -4,11 +4,11 @@ use gdal::Dataset;
 
 // TODO: This require 'rasterIO' to be exposed on the Dataset, see
 // https://github.com/georust/gdal/pull/374
-pub fn read_ds_at_once(ds: &Dataset) -> ImageData<u8> {
+pub fn read_ds_at_once(ds: &Dataset) -> ImageData<f64> {
     let nbands = ds.raster_count() as usize;
     let size = ds.raster_size();
     let buf = ds
-        .read_as::<u8>(
+        .read_as::<f64>(
             (0, 0),
             (size.0, size.1),
             (size.0, size.1),

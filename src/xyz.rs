@@ -65,7 +65,7 @@ fn compute_tile_bounds(x: u64, y: u64, zoom: u64) -> TileBounds {
     }
 }
 
-pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> ImageData<u8> {
+pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> ImageData<f64> {
     // We serve XYZ tiles => reverse y
     // TODO: Is this the right place to do it ? Should this be in compute_tile_bounds ?
     let y = ((2.0_f64.powf(coords.zoom as f64) - 1.0) - coords.y as f64) as u64;
@@ -76,7 +76,7 @@ pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> ImageData<u8> {
     tile_srs.set_axis_mapping_strategy(OSRAxisMappingStrategy::OAMS_TRADITIONAL_GIS_ORDER);
     let drv = DriverManager::get_driver_by_name("MEM").unwrap();
     let mut tile_ds = drv
-        .create("", TILE_SIZE as isize, TILE_SIZE as isize, 4)
+        .create_with_band_type::<f64, _>("", TILE_SIZE as isize, TILE_SIZE as isize, 4)
         .unwrap();
     tile_ds
         .rasterband(4)

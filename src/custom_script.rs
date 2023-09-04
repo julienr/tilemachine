@@ -34,7 +34,7 @@ impl CustomScript {
             let ds = open_dataset_fn(filename)?;
             let image_data = extract_tile(&ds, coords);
             // Convert from u8 to f64 for computations
-            let data_f64 = image_data.data.iter().map(|e| *e as f64).collect();
+            let data_f64 = image_data.data.to_vec();
             let image_data = ImageData::from_vec(
                 image_data.width,
                 image_data.height,
@@ -111,7 +111,6 @@ fn run_on_pixel(
         .collect();
     let function_this: v8::Local<'_, v8::Value> = v8::null(call_scope).into();
     if let Some(return_value) = func.call(call_scope, function_this, &args) {
-        //let return_scope = &mut v8::HandleScope::new(call_scope);
         if !return_value.is_array() {
             log::error!(
                 "Expected an array as return type, got {:?}",
@@ -128,6 +127,8 @@ fn run_on_pixel(
                 .unwrap();
             if v > 255.0 {
                 v = 255.0;
+            } else if v < 0.0 {
+                v = 0.0;
             }
             v as u8
         };
