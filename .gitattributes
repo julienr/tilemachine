@@ -1,1 +1,5 @@
 example_data/tile.png filter=lfs diff=lfs merge=lfs -text
+example_data/new_zealand_1_dsm.tif filter=lfs diff=lfs merge=lfs -text
+example_data/new_zealand_1_rgb.tif filter=lfs diff=lfs merge=lfs -text
+example_data/palm_dsm.tif filter=lfs diff=lfs merge=lfs -text
+example_data/palm_rgb.tif filter=lfs diff=lfs merge=lfs -text

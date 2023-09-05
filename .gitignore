@@ -1,5 +1,5 @@
 notes
 /target
-example_data/*
+example_data/raw
 !example_data/tile.png
 out.png
