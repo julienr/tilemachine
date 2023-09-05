@@ -16,17 +16,19 @@
         align-items: stretch;
       }
       #map {
-        position: absolute;
-        top: 0;
-        bottom: 0;
         width: 100%;
+        flex-grow: 1;
       }
-      #overlay {
-        position: absolute;
-        bottom: 0;
-        background-color: white;
-        padding: 30px;
-        z-index: 1000;
+      #panel {
+        flex-grow: 0;
+        width: 100%;
+        padding: 10px;
+      }
+      .container {
+        height: 100vh;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
       }
       .editor {
         height: 200px;
@@ -36,20 +38,34 @@
     </style>
   </head>
   <body>
-    <div id="map">
+    <div class="container">
+      <div id="map">
+      </div>
+      <div id="panel">
+        <p>Custom script:</p>
+        <p>Examples:</p>
+        <select name="examples" id="examples-select">
+          <!-- Filled by addExamples() -->
+          <option value="none" label="none" />
+        </select>
+        <form id="raster_form" action="/" method="GET">
+          <!-- hidden input that gets the content of #editor -->
+          <input name="custom_script" type="hidden" id="custom_script" />
+          <div style="display: flex; gap: 10px;">
+            <div>
+              <p>Inputs</p>
+              <div id="inputs-editor" class="editor"></div>
+            </div>
+            <div>
+              <p>Script</p>
+              <div id="script-editor" class="editor"></div>
+            </div>
+          </div>
+          <input type="submit" value="Display" style="margin-top: 10px" />
+        </form>
+      </div>
     </div>
-    <div id="overlay">
-      <p>Custom script:</p>
-      <form id="raster_form" action="/" method="GET">
-        <!-- hidden input that gets the content of #editor -->
-        <input name="custom_script" type="hidden" id="custom_script" />
-        <p>Inputs</p>
-        <div id="inputs-editor" class="editor"></div>
-        <p>Script</p>
-        <div id="script-editor" class="editor"></div>
-        <input type="submit" value="Display" style="margin-top: 10px" />
-      </form>
-    </div>
+    <script src="examples.js"></script>
     <script src="main.js"></script>
     <script>
       // Initalize ACE editor
@@ -58,6 +74,7 @@
         "script-editor",
         "inputs-editor"
       )
+      setupExamples(scriptEditor, "examples-select")
       const params = new URLSearchParams(window.location.search);
 
       const map = L.map('map').setView([0, 30], 9);
@@ -80,12 +97,7 @@
           }).addTo(map);
         })
       } else {
-        scriptEditor.setCustomScript({
-          "inputs": {
-              "rgb": "rasters/raster1.tif"
-          },
-          "script": "return [rgb[0], rgb[1], rgb[2], rgb[3]]"
-        })
+        loadExample(scriptEditor, "nz_rgb")
       }
     </script>
   </body>
