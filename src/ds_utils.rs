@@ -24,14 +24,14 @@ pub fn read_ds_at_once(ds: &Dataset) -> ImageData<f64> {
 // Reads the whole dataset into a buffer
 // Returns the buffer and its size (width, height)
 #[allow(dead_code)]
-pub fn read_ds_band_by_band(ds: &Dataset) -> ImageData<u8> {
+pub fn read_ds_band_by_band(ds: &Dataset) -> ImageData<f64> {
     let nbands = ds.raster_count() as usize;
     let size = ds.raster_size();
-    let mut image_data = ImageData::<u8>::new(size.0, size.1, nbands);
+    let mut image_data = ImageData::<f64>::new(size.0, size.1, nbands);
     for i in 1..nbands + 1 {
         let band = ds.rasterband(i as isize).unwrap();
         let data = band
-            .read_as::<u8>(
+            .read_as::<f64>(
                 (0, 0),
                 (size.0, size.1),
                 (size.0, size.1),
