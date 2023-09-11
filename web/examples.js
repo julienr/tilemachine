@@ -2,12 +2,12 @@ const EXAMPLES = {
   "nz_rgb": {
     "title": "New zealand RGB",
     "inputs": {"rgb":"rasters/new_zealand_1_rgb.tif","dsm":"rasters/new_zealand_1_dsm.tif"},
-    "script": "return [rgb[0], rgb[1], rgb[2], rgb[3]]"
+    "script": "return [rgb[0], rgb[1], rgb[2], 255]"
   },
   "nz_dsm": {
     "title": "New zealand DSM",
     "inputs": {"rgb":"rasters/new_zealand_1_rgb.tif","dsm":"rasters/new_zealand_1_dsm.tif"},
-    "script": "return [10 * dsm[0], 10 * dsm[0], 10 * dsm[0], rgb[3]]"
+    "script": "return [10 * dsm[0], 10 * dsm[0], 10 * dsm[0], 255]"
   },
   "palm_rgb": {
     "title": "Palm trees RGB",
