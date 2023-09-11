@@ -74,14 +74,10 @@ pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> ImageData<f64> {
     // TODO: Early return if raster invisible in tile (covers too little)
     let tile_srs = SpatialRef::from_epsg(3857).unwrap();
     tile_srs.set_axis_mapping_strategy(OSRAxisMappingStrategy::OAMS_TRADITIONAL_GIS_ORDER);
+    let num_bands = ds.raster_count();
     let drv = DriverManager::get_driver_by_name("MEM").unwrap();
     let mut tile_ds = drv
-        .create_with_band_type::<f64, _>("", TILE_SIZE as isize, TILE_SIZE as isize, 4)
-        .unwrap();
-    tile_ds
-        .rasterband(4)
-        .unwrap()
-        .set_color_interpretation(gdal::raster::ColorInterpretation::AlphaBand)
+        .create_with_band_type::<f64, _>("", TILE_SIZE as isize, TILE_SIZE as isize, num_bands)
         .unwrap();
 
     let tile_bounds = compute_tile_bounds(coords.x, y, coords.zoom);

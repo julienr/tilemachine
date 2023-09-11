@@ -15,9 +15,9 @@ const EXAMPLES = {
     "script": `
       // From QGIS
       let min_maxes = [
-        [0.002, 0.031],
-        [0.004, 0.06],
-        [0.002, 0.058],
+        [0.0, 0.2],
+        [0.0, 0.2],
+        [0.0, 0.2],
         [0.00879835, 0.14448],
         [0.0244771, 0.275814]
       ]
@@ -39,8 +39,8 @@ const EXAMPLES = {
       let red = optical[0];
       const ndvi = (nir - red) / (nir + red);
       // From [-1, 1] to [0, 255]
-      const ndvi_rgb = 255 * (ndvi + 1) / 2.0;
-      return [ndvi, ndvi, ndvi, 255]
+      const ndvi_u8 = 255.0 * ((ndvi + 1.0) / 2.0);
+      return [ndvi_u8, ndvi_u8, ndvi_u8, 255]
     `
   },
   "palm_dsm": {
