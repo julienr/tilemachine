@@ -79,7 +79,7 @@
 
       const map = L.map('map').setView([0, 30], 9);
       const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
+        maxZoom: 25,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       }).addTo(map);
 
@@ -92,7 +92,6 @@
           map.fitBounds(bounds)
           // TODO: To ensure caching, should make sure the JSON encoding is deterministic
           L.tileLayer('/tile/xyz/' + encodeURIComponent(JSON.stringify(customScript)) + '/{z}/{y}/{x}', {
-            // TODO: Obtain maxZoom from /bounds ?
             maxZoom: 25
           }).addTo(map);
         })
