@@ -30,17 +30,47 @@ const EXAMPLES = {
       return [normalize(0), normalize(1), normalize(2), 255]
     `
   },
-  // TODO: That doesn't work, replace by sentinel example
-  "palm_ndvi": {
-    "title": "Palm trees NDVI",
-    "inputs": {"optical":"rasters/palm_rgb.tif"},
+  "s2_ndvi": {
+    "title": "Sentinel 2 NDVI",
+    "inputs": {"s2":"rasters/s2_lausanne.tiff"},
     "script": `
-      let nir = optical[3];
-      let red = optical[0];
-      const ndvi = (nir - red) / (nir + red);
-      // From [-1, 1] to [0, 255]
-      const ndvi_u8 = 255.0 * ((ndvi + 1.0) / 2.0);
-      return [ndvi_u8, ndvi_u8, ndvi_u8, 255]
+      let red = s2[3];
+      let nir = s2[7];
+      let ndvi = (nir - red) / (nir + red);
+      //const ndvi_u8 = 255.0 * ((ndvi + 1.0) / 2.0);
+      //return [ndvi_u8, ndvi_u8, ndvi_u8, 255]
+      // https://custom-scripts.sentinel-hub.com/custom-scripts/sentinel-2/ndvi/
+      function cmap(v) {
+          if (v < -0.2) {
+              return [0, 0, 0, 255, 255]
+          } else if (v <= 0) {
+              return [165, 0, 38, 255]
+          } else if (v <= 0.1) {
+              return [215, 48, 39, 255]
+          } else if (v <= 0.2) {
+              return [244, 109, 67, 255]
+          } else if (v <= 0.3) {
+              return [253, 174, 97, 255]
+          } else if (v <= 0.4) {
+              return [254, 224, 139, 255]
+          } else if (v <= 0.5) {
+              return [255, 255, 191, 255]
+          } else if (v <= 0.6) {
+              return [217, 239, 139, 255]
+          } else if (v <= 0.7) {
+              return [166, 217, 106, 255]
+          } else if (v <= 0.8) {
+              return [102, 189, 99, 255]
+          } else if (v <= 0.9) {
+              return [26, 152, 80, 255]
+          } else if (v <= 1.0) {
+              return [0, 104, 55, 255]
+          } else {
+              return [0, 0, 0, 0]
+          }
+      }
+      
+      return cmap(ndvi)
     `
   },
   "palm_dsm": {
