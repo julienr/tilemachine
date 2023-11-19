@@ -1,5 +1,7 @@
 notes
 /target
 example_data/raw
+example_data/*.xml
 !example_data/tile.png
 out.png
+.idea
