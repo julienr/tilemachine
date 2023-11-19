@@ -1,17 +1,17 @@
 const EXAMPLES = {
   "nz_rgb": {
     "title": "New zealand RGB",
-    "inputs": {"rgb":"rasters/new_zealand_1_rgb.tif","dsm":"rasters/new_zealand_1_dsm.tif"},
+    "inputs": {"rgb":"s3:rasters/new_zealand_1_rgb.tif","dsm":"s3:rasters/new_zealand_1_dsm.tif"},
     "script": "return [rgb[0], rgb[1], rgb[2], 255]"
   },
   "nz_dsm": {
     "title": "New zealand DSM",
-    "inputs": {"rgb":"rasters/new_zealand_1_rgb.tif","dsm":"rasters/new_zealand_1_dsm.tif"},
+    "inputs": {"rgb":"s3:rasters/new_zealand_1_rgb.tif","dsm":"s3:rasters/new_zealand_1_dsm.tif"},
     "script": "return [10 * dsm[0], 10 * dsm[0], 10 * dsm[0], 255]"
   },
   "palm_rgb": {
     "title": "Palm trees RGB",
-    "inputs": {"optical":"rasters/palm_rgb.tif"},
+    "inputs": {"optical":"s3:rasters/palm_rgb.tif"},
     "script": `
       // From QGIS
       let min_maxes = [
@@ -32,7 +32,7 @@ const EXAMPLES = {
   },
   "s2_ndvi": {
     "title": "Sentinel 2 NDVI",
-    "inputs": {"s2":"rasters/s2_lausanne.tiff"},
+    "inputs": {"s2":"s3:rasters/s2_lausanne.tiff"},
     "script": `
       let red = s2[3];
       let nir = s2[7];
@@ -75,7 +75,7 @@ const EXAMPLES = {
   },
   "palm_dsm": {
     "title": "Palm trees DSM",
-    "inputs": {"dsm": "rasters/palm_dsm.tif"}, 
+    "inputs": {"dsm": "s3:rasters/palm_dsm.tif"},
     "script": `
       function normalize(v, vmin, vmax) {
         return 255 * (v - vmin) / (vmax - vmin)
@@ -91,7 +91,7 @@ const EXAMPLES = {
   },
   "palm_rgb_dsm": {
     "title": "Palm trees mixing DSM and RGB",
-    "inputs": {"optical":"rasters/palm_rgb.tif", "dsm": "rasters/palm_dsm.tif"}, 
+    "inputs": {"optical":"s3:rasters/palm_rgb.tif", "dsm": "s3:rasters/palm_dsm.tif"},
     "script": `
       function normalize(v, vmin, vmax) {
         return 255 * (v - vmin) / (vmax - vmin)

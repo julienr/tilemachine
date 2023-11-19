@@ -18,6 +18,7 @@ pub enum Error {
     SerdeError(serde_json::Error),
     ScriptError(ScriptError),
     HandlebarsError(RenderError),
+    InvalidPath(String),
 }
 
 impl From<serde_json::Error> for Error {

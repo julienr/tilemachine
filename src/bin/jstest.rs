@@ -2,13 +2,13 @@
 // on a tile
 // Usage:
 // `cargo run --bin jstest && eog out.png`
-use gdal::Dataset;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::time::Instant;
 use tilemachine::custom_script::CustomScript;
-use tilemachine::utils::{ImageData, Result};
+use tilemachine::source::open_source;
+use tilemachine::utils::ImageData;
 use tilemachine::xyz::TileCoords;
 
 fn save_tile(image_data: &ImageData<u8>) {
@@ -26,17 +26,12 @@ fn save_tile(image_data: &ImageData<u8>) {
     f.write_all(out_buf.as_slice()).unwrap();
 }
 
-fn open_dataset(filename: &str) -> Result<Dataset> {
-    let ds = Dataset::open(filename)?;
-    Ok(ds)
-}
-
 fn main() {
     let script = r#"
         {
             "inputs": {
-                "rgb": "example_data/raster1.tif",
-                "dsm": "example_data/raster1_fake_dsm_cog.tif"
+                "rgb": "file:example_data/new_zealand_1_rgb.tif",
+                "dsm": "file:example_data/new_zealand_1_dsm.tif"
             },
             "script": "return [3 * dsm[0], rgb[1], rgb[2], 255]"
         }
@@ -49,7 +44,7 @@ fn main() {
         zoom: 20,
     };
     let start = Instant::now();
-    let out_data = script.execute_on_tile(&tile_coords, &open_dataset).unwrap();
+    let out_data = script.execute_on_tile(&tile_coords, &open_source).unwrap();
     let duration = start.elapsed();
     println!("took {:?}", duration);
     save_tile(&out_data);

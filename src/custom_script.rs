@@ -1,11 +1,10 @@
 use crate::bbox::BoundingBox;
 use crate::geojson::PolygonGeometry;
-use crate::raster;
+use crate::source::Source;
 use crate::utils::ImageData;
 use crate::utils::ScriptError;
 use crate::utils::{Error, Result};
 use crate::xyz::{extract_tile, TileCoords, TILE_SIZE};
-use gdal::Dataset;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -14,7 +13,7 @@ use v8::Message;
 #[derive(Deserialize)]
 pub struct CustomScript {
     script: String,
-    inputs: HashMap<String, String>,
+    pub inputs: HashMap<String, String>,
 }
 
 impl CustomScript {
@@ -26,13 +25,13 @@ impl CustomScript {
     pub fn execute_on_tile(
         &self,
         coords: &TileCoords,
-        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
+        open_source_fn: &dyn Fn(&str) -> Result<Box<dyn Source>>,
     ) -> Result<ImageData<u8>> {
         let mut engine = JSEngine::default();
         let mut coll = ImageDataCollection::<f64>::new(TILE_SIZE as usize);
         for (name, filename) in self.inputs.iter() {
-            let ds = open_dataset_fn(filename)?;
-            let image_data = extract_tile(&ds, coords);
+            let source = open_source_fn(filename)?;
+            let image_data = extract_tile(source.as_ref(), coords);
             // Convert from u8 to f64 for computations
             let data_f64 = image_data.data.to_vec();
             let image_data = ImageData::from_vec(
@@ -48,12 +47,12 @@ impl CustomScript {
 
     pub fn get_bounds(
         &self,
-        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
+        open_source_fn: &dyn Fn(&str) -> Result<Box<dyn Source>>,
     ) -> Result<BoundingBox> {
         let mut bboxes: Vec<BoundingBox> = vec![];
         for (_name, filename) in self.inputs.iter() {
-            let ds = open_dataset_fn(filename)?;
-            bboxes.push(raster::wgs84_bbox(&ds)?);
+            let source = open_source_fn(filename)?;
+            bboxes.push(source.wgs84_bbox()?);
         }
 
         BoundingBox::union(&bboxes)
@@ -61,7 +60,7 @@ impl CustomScript {
 
     pub fn get_bounds_as_polygon(
         &self,
-        open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
+        open_dataset_fn: &dyn Fn(&str) -> Result<Box<dyn Source>>,
     ) -> Result<PolygonGeometry> {
         Ok(self.get_bounds(open_dataset_fn)?.into())
     }

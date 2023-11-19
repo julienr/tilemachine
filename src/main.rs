@@ -4,12 +4,12 @@ use actix_files as fs;
 use actix_web::{
     get, http::header::ContentType, middleware, web, App, HttpRequest, HttpResponse, HttpServer,
 };
-use gdal::Dataset;
 use std::collections::HashMap;
 use tilemachine::xyz::TileCoords;
 
 use tilemachine::custom_script::CustomScript;
-use tilemachine::utils::{Error, Result, ScriptError};
+use tilemachine::source::open_source;
+use tilemachine::utils::{Error, ScriptError};
 use tilemachine::wms;
 
 fn setup_gdal() {
@@ -42,12 +42,6 @@ fn respond_with_error(message: &str, error: &Error) -> HttpResponse {
     HttpResponse::InternalServerError().body(extended_message.to_string())
 }
 
-fn open_dataset_from_blobstore(raster_path: &str) -> Result<Dataset> {
-    let mut vsi_path = "/vsis3/".to_owned();
-    vsi_path.push_str(raster_path);
-    Ok(Dataset::open(vsi_path.as_str())?)
-}
-
 #[get("/wms/{custom_script:.+}/service")]
 async fn get_wms(
     path: web::Path<String>,
@@ -59,7 +53,7 @@ async fn get_wms(
     };
     // TODO: Parse query params
     println!("query_params: {:?}", query.get("SERVICE"));
-    match wms::capabilities(&custom_script, &open_dataset_from_blobstore) {
+    match wms::capabilities(&custom_script, &open_source) {
         Ok(xml) => HttpResponse::Ok()
             .content_type(ContentType::xml())
             .body(xml),
@@ -75,8 +69,7 @@ async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse 
         Ok(script) => script,
         Err(e) => return respond_with_error("Failed to parse custom script", &e),
     };
-    match custom_script.execute_on_tile(&TileCoords { x, y, zoom: z }, &open_dataset_from_blobstore)
-    {
+    match custom_script.execute_on_tile(&TileCoords { x, y, zoom: z }, &open_source) {
         Ok(image_data) => HttpResponse::Ok()
             .content_type(ContentType::png())
             .body(image_data.to_png()),
@@ -85,13 +78,13 @@ async fn get_xyz_tile(path: web::Path<(String, u64, u64, u64)>) -> HttpResponse 
 }
 
 #[get("/bounds/{custom_script:.+}")]
-async fn get_bounds(path: web::Path<String>) -> HttpResponse {
-    let custom_script = match CustomScript::new_from_str(&path.into_inner()) {
+async fn get_bounds(script: web::Path<String>) -> HttpResponse {
+    let custom_script = match CustomScript::new_from_str(&script.into_inner()) {
         Ok(script) => script,
         Err(e) => return respond_with_error("Failed to parse custom script", &e),
     };
 
-    match custom_script.get_bounds_as_polygon(&open_dataset_from_blobstore) {
+    match custom_script.get_bounds_as_polygon(&open_source) {
         Ok(bounds) => HttpResponse::Ok().json(bounds),
         Err(e) => respond_with_error("Failed to compute bounds", &e),
     }

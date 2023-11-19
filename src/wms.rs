@@ -1,15 +1,15 @@
 use crate::bbox::BoundingBox;
 use crate::custom_script::CustomScript;
+use crate::source::Source;
 use crate::utils::Result;
-use gdal::Dataset;
 use handlebars::Handlebars;
 use serde_json::json;
 
 pub fn capabilities(
     script: &CustomScript,
-    open_dataset_fn: &dyn Fn(&str) -> Result<Dataset>,
+    open_source_fn: &dyn Fn(&str) -> Result<Box<dyn Source>>,
 ) -> Result<String> {
-    let bbox = script.get_bounds(open_dataset_fn)?;
+    let bbox = script.get_bounds(open_source_fn)?;
     // TODO: Give specific/unique names
     get_capabilities_xml("image", bbox)
 }

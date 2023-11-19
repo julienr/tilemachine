@@ -1,7 +1,8 @@
 use std::f64::consts::PI;
 
+use crate::source::Source;
 use crate::{ds_utils::read_ds_at_once, utils::ImageData};
-use gdal::{spatial_ref::SpatialRef, Dataset, DriverManager};
+use gdal::{spatial_ref::SpatialRef, DriverManager};
 use gdal_sys::OSRAxisMappingStrategy;
 
 // This is the WGS_1984 spheroid radius in meters
@@ -65,7 +66,7 @@ fn compute_tile_bounds(x: u64, y: u64, zoom: u64) -> TileBounds {
     }
 }
 
-pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> ImageData<f64> {
+pub fn extract_tile(source: &dyn Source, coords: &TileCoords) -> ImageData<f64> {
     // We serve XYZ tiles => reverse y
     // TODO: Is this the right place to do it ? Should this be in compute_tile_bounds ?
     let y = ((2.0_f64.powf(coords.zoom as f64) - 1.0) - coords.y as f64) as u64;
@@ -74,10 +75,15 @@ pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> ImageData<f64> {
     // TODO: Early return if raster invisible in tile (covers too little)
     let tile_srs = SpatialRef::from_epsg(3857).unwrap();
     tile_srs.set_axis_mapping_strategy(OSRAxisMappingStrategy::OAMS_TRADITIONAL_GIS_ORDER);
-    let num_bands = ds.raster_count();
+    let num_bands = source.num_bands();
     let drv = DriverManager::get_driver_by_name("MEM").unwrap();
     let mut tile_ds = drv
-        .create_with_band_type::<f64, _>("", TILE_SIZE as isize, TILE_SIZE as isize, num_bands)
+        .create_with_band_type::<f64, _>(
+            "",
+            TILE_SIZE as isize,
+            TILE_SIZE as isize,
+            num_bands as isize,
+        )
         .unwrap();
 
     let tile_bounds = compute_tile_bounds(coords.x, y, coords.zoom);
@@ -95,7 +101,7 @@ pub fn extract_tile(ds: &Dataset, coords: &TileCoords) -> ImageData<f64> {
     tile_ds.set_geo_transform(&tile_geo).unwrap();
     tile_ds.set_spatial_ref(&tile_srs).unwrap();
 
-    gdal::raster::reproject(ds, &tile_ds).unwrap();
+    source.reproject_to(&tile_ds).unwrap();
     println!(
         "extracting_tile for x={:?}, y={:?}, zoom={:?}, tile_geo={:?}",
         coords.x, y, coords.zoom, tile_geo

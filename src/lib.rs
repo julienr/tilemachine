@@ -6,3 +6,5 @@ pub mod raster;
 pub mod utils;
 pub mod wms;
 pub mod xyz;
+
+pub mod source;
