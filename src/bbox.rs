@@ -33,8 +33,7 @@ impl BoundingBox {
         self.ymax = self.ymax.max(other.ymax);
     }
 
-    /// Return the union of all the passed bounding boxes. Returns None if 0 bounding boxes are passed
-    // TODO: Return ScriptError
+    /// Return the union of all the passed bounding boxes. Returns a ScriptError if boxes is empty
     pub fn union(boxes: &[BoundingBox]) -> Result<BoundingBox> {
         if boxes.is_empty() {
             Err(Error::ScriptError(ScriptError::NotEnoughinputs))
